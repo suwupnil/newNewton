@@ -57,6 +57,9 @@ body.grauity-theme-dark {
 
 /* 4. "Due Tomorrow" and Due Date Badge (Crimson Red with high contrast text) */
 .grauity-theme-dark [data-newton-due-badge],
+.grauity-theme-dark [data-newton-card] > div:first-child > div:last-child,
+.grauity-theme-dark div:has(> div > [primarycolor]) > div:first-child > div:last-child,
+.grauity-theme-dark div:has(> [data-newton-card-footer]) > div:first-child > div:last-child,
 .grauity-theme-dark div:has(> [primarycolor]) > div:first-child > div:last-child,
 .grauity-theme-dark [class*="sc-48b8f391-11"],
 .grauity-theme-dark .dzkLCZ {
@@ -71,29 +74,49 @@ body.grauity-theme-dark {
 }
 
 /* 5. Task Cards & Elevation (Strictly without unwanted borders) */
-.grauity-theme-dark div:has(> [primarycolor]):not(:has([primarycolor="#007A51"])),
-.grauity-theme-dark [class*="sc-48b8f391-10"],
+.grauity-theme-dark [data-newton-card]:not([data-newton-card-completed]),
+.grauity-theme-dark div:has(> h3, > * > h3):has([primarycolor]):not(:has([primarycolor="#007A51"])):not([data-newton-card-completed]),
+.grauity-theme-dark div:has(> div > [primarycolor]):not(:has([primarycolor="#007A51"])):not([data-newton-card-completed]),
+.grauity-theme-dark div:has(> [data-newton-card-footer]):not(:has([primarycolor="#007A51"])):not([data-newton-card-completed]),
+.grauity-theme-dark [class*="sc-48b8f391-10"]:not(.osmtW):not([class*="osmtW"]):not([class*="hNZhIJ"]):not([class*="oDEDp"]):not([data-newton-motivation-banner]),
 .grauity-theme-dark [class*="sc-48b8f391-10"].iCKKEZ,
 .grauity-theme-dark [class*="sc-48b8f391-10"].idLgft,
 .grauity-theme-dark .iCKKEZ,
 .grauity-theme-dark .idLgft {
   background: #14171E !important;
+  background-color: #14171E !important;
   border-radius: 12px !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
 }
 
-/* Completed Card: Dark Slate with subtle emerald tone */
-.grauity-theme-dark div:has([primarycolor="#007A51"]),
+/* Completed Card: Pitch Black (Strictly no green background, borders, or container leakage) */
+.grauity-theme-dark [data-newton-card-completed],
+.grauity-theme-dark [data-newton-card][data-newton-card-completed],
+.grauity-theme-dark div:has(> h3, > * > h3):has([primarycolor="#007A51"]),
+.grauity-theme-dark div:has(> div > [primarycolor="#007A51"]),
+.grauity-theme-dark div:has(> [data-newton-card-footer] [primarycolor="#007A51"]),
 .grauity-theme-dark [class*="sc-48b8f391-10"].osmtW,
 .grauity-theme-dark .osmtW {
-  background: #0F1E19 !important;
+  background: #0B0C0E !important;
+  background-color: #0B0C0E !important;
   border-radius: 12px !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Ensure card wrappers/lists never inherit unwanted background or green */
+.grauity-theme-dark div:has(> [data-newton-card]),
+.grauity-theme-dark div:has(> div > [data-newton-card]),
+.grauity-theme-dark [class*="sc-48b8f391-0"]:not([class*="hNZhIJ"]):not([class*="oDEDp"]):not([data-newton-motivation-banner]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
 }
 
 /* Task Card Tag / Pill Header (Subject title e.g. "Maths I - D", "PSP - D") */
+.grauity-theme-dark [data-newton-card] > div:first-child > div:first-child,
+.grauity-theme-dark div:has(> div > [primarycolor]) > div:first-child > div:first-child,
 .grauity-theme-dark div:has(> [primarycolor]) > div:first-child > div:first-child,
 .grauity-theme-dark [class*="sc-48b8f391-12"],
 .grauity-theme-dark [class*="sc-48b8f391-13"],
@@ -103,6 +126,7 @@ body.grauity-theme-dark {
 }
 
 /* Task Card Main Title (e.g. "M1 Post Class Assignment 1") */
+.grauity-theme-dark [data-newton-card] h3,
 .grauity-theme-dark div:has([primarycolor]) h3,
 .grauity-theme-dark [class*="sc-48b8f391-19"],
 .grauity-theme-dark .hCeLpq {
@@ -111,21 +135,30 @@ body.grauity-theme-dark {
 }
 
 /* Task Card Deadline / Subtitle info */
+.grauity-theme-dark [data-newton-card] [class*="sc-48b8f391-20"],
 .grauity-theme-dark [class*="sc-48b8f391-20"],
 .grauity-theme-dark .fSQOSq,
 .grauity-theme-dark [class*="sc-92e1651-0"].text-left {
   color: #94A3B8 !important;
 }
 
-/* Task Card Footer */
+/* Task Card Footer (Remove extra border and background) */
+.grauity-theme-dark [data-newton-card-footer],
+.grauity-theme-dark div:has(> [data-newton-solved-block]),
+.grauity-theme-dark div:has(> button):not([data-newton-motivation-banner] *):not([class*="hNZhIJ"]):not([class*="oDEDp"]),
 .grauity-theme-dark div:has(> [primarycolor]),
 .grauity-theme-dark [class*="sc-48b8f391-21"],
 .grauity-theme-dark .jkwPqk {
   background: transparent !important;
-  border-top: 1px solid #1E232B !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-top: none !important;
+  box-shadow: none !important;
 }
 
 /* Task Card Solve / Action Button */
+.grauity-theme-dark [data-newton-card] button,
+.grauity-theme-dark [data-newton-card-footer] button,
 .grauity-theme-dark div:has(> [primarycolor]) button,
 .grauity-theme-dark [class*="sc-48b8f391-23"],
 .grauity-theme-dark .knBExv,
@@ -138,6 +171,8 @@ body.grauity-theme-dark {
   font-weight: 600 !important;
 }
 
+.grauity-theme-dark [data-newton-card] button *,
+.grauity-theme-dark [data-newton-card-footer] button *,
 .grauity-theme-dark div:has(> [primarycolor]) button *,
 .grauity-theme-dark [class*="sc-48b8f391-23"] *,
 .grauity-theme-dark .knBExv *,
@@ -145,6 +180,8 @@ body.grauity-theme-dark {
   color: #FFFFFF !important;
 }
 
+.grauity-theme-dark [data-newton-card] button:hover,
+.grauity-theme-dark [data-newton-card-footer] button:hover,
 .grauity-theme-dark div:has(> [primarycolor]) button:hover,
 .grauity-theme-dark [class*="sc-48b8f391-23"]:hover,
 .grauity-theme-dark .knBExv:hover,
@@ -152,15 +189,39 @@ body.grauity-theme-dark {
   background: #1D4ED8 !important;
 }
 
-/* 6. "Number of Solved" & Statistics Progress Indicators */
+/* 6. "Number of Solved" & Statistics Progress Indicators (No extra border/background) */
+.grauity-theme-dark [data-newton-solved-block],
+.grauity-theme-dark [data-newton-card-footer] > div:first-child,
+.grauity-theme-dark div:has(> button) > div:first-child,
 .grauity-theme-dark [primarycolor],
 .grauity-theme-dark [secondarycolor],
 .grauity-theme-dark [class*="sc-48b8f391-22"],
 .grauity-theme-dark .fMZYpR {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
   color: #94A3B8 !important;
 }
 
+.grauity-theme-dark [data-newton-solved-block] *,
+.grauity-theme-dark [data-newton-card-footer] > div:first-child *,
+.grauity-theme-dark div:has(> button) > div:first-child *,
+.grauity-theme-dark [primarycolor] *,
+.grauity-theme-dark [secondarycolor] *,
+.grauity-theme-dark [class*="sc-48b8f391-22"] * {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
 /* Solved number count (previously #16191D black) */
+.grauity-theme-dark [data-newton-solved-block] span,
+.grauity-theme-dark [data-newton-card-footer] > div:first-child span,
+.grauity-theme-dark div:has(> button) > div:first-child span,
 .grauity-theme-dark [primarycolor] span,
 .grauity-theme-dark [class*="sc-48b8f391-22"] span,
 .grauity-theme-dark .fMZYpR span {
@@ -169,15 +230,30 @@ body.grauity-theme-dark {
 }
 
 /* Completed cards: solved number count */
+.grauity-theme-dark [data-newton-card-completed] [data-newton-solved-block] span,
+.grauity-theme-dark [data-newton-card-completed] [data-newton-card-footer] > div:first-child span,
+.grauity-theme-dark [data-newton-card-completed] div:has(> button) > div:first-child span,
+.grauity-theme-dark [data-newton-solved-block][data-newton-completed] span,
 .grauity-theme-dark [primarycolor="#007A51"] span,
 .grauity-theme-dark [class*="sc-48b8f391-22"].TCIGy span,
 .grauity-theme-dark .TCIGy span {
   color: #34D399 !important;
   font-weight: 600 !important;
 }
+
+.grauity-theme-dark [data-newton-card-completed] [data-newton-solved-block],
+.grauity-theme-dark [data-newton-card-completed] [data-newton-card-footer] > div:first-child,
+.grauity-theme-dark [data-newton-card-completed] div:has(> button) > div:first-child,
+.grauity-theme-dark [data-newton-solved-block][data-newton-completed],
 .grauity-theme-dark [primarycolor="#007A51"],
 .grauity-theme-dark [class*="sc-48b8f391-22"].TCIGy,
 .grauity-theme-dark .TCIGy {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
   color: #A7F3D0 !important;
 }
 
@@ -416,34 +492,54 @@ body.grauity-theme-dark {
   display: none !important;
 }
 
-/* 12. Motivation Banners ("Backlog zone", "Almost There!") */
+/* 12. Motivation Banners ("Backlog zone", "Time to lock in", "Almost There!") */
+.grauity-theme-dark [data-newton-motivation-banner],
+.grauity-theme-dark [data-newton-lockin-block],
+.grauity-theme-dark div:has(> [data-newton-motivation-text]),
+.grauity-theme-dark div:has(> * > [data-newton-motivation-text]),
+.grauity-theme-dark div:has(> * > * > [data-newton-motivation-text]),
 .grauity-theme-dark [class*="hNZhIJ"],
 .grauity-theme-dark [class*="sc-48b8f391-0"].hNZhIJ,
-.grauity-theme-dark [class*="sc-48b8f391-10"].hNZhIJ {
-  background: linear-gradient(180deg, #2D1A0E 0%, #1A0F08 100%) !important;
-  border: 1px solid #78350F !important;
-  border-radius: 16px !important;
-}
-.grauity-theme-dark [class*="hNZhIJ"] * {
-  color: #FED7AA !important;
-}
-.grauity-theme-dark [class*="sc-48b8f391-24"] {
-  border-color: #78350F !important;
-}
-
+.grauity-theme-dark [class*="sc-48b8f391-10"].hNZhIJ,
 .grauity-theme-dark [class*="oDEDp"],
 .grauity-theme-dark [class*="sc-48b8f391-0"].oDEDp,
 .grauity-theme-dark [class*="sc-48b8f391-10"].oDEDp {
-  background: linear-gradient(180deg, #261D03 0%, #171101 100%) !important;
-  border: 1px solid #713F12 !important;
-  border-radius: 16px !important;
-}
-.grauity-theme-dark [class*="oDEDp"] * {
-  color: #FEF08A !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
 }
 
+.grauity-theme-dark [data-newton-motivation-banner] *,
+.grauity-theme-dark [data-newton-lockin-block] *,
+.grauity-theme-dark div:has(> [data-newton-motivation-text]) *,
+.grauity-theme-dark div:has(> * > [data-newton-motivation-text]) *,
+.grauity-theme-dark div:has(> * > * > [data-newton-motivation-text]) *,
+.grauity-theme-dark [class*="hNZhIJ"] *,
+.grauity-theme-dark [class*="oDEDp"] *,
+.grauity-theme-dark [class*="sc-48b8f391-24"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.grauity-theme-dark [data-newton-motivation-text],
+.grauity-theme-dark [data-newton-motivation-banner] p,
+.grauity-theme-dark [data-newton-lockin-block] p,
+.grauity-theme-dark [class*="hNZhIJ"] p,
 .grauity-theme-dark [class*="sc-48b8f391-28"] p {
   color: #FED7AA !important;
+  font-weight: 600 !important;
+}
+
+.grauity-theme-dark [class*="oDEDp"] p {
+  color: #FEF08A !important;
   font-weight: 600 !important;
 }
 
