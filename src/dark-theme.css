@@ -1028,3 +1028,182 @@ body.grauity-theme-dark {
   border: none !important;
   border-radius: 8px !important;
 }
+
+/* ==========================================================================
+   27. Newton Enhancer: Sidebar Hide/Show (Focus Mode) & UI Library Toggle Button
+   ========================================================================== */
+
+/* Ant Design & Grauity Native Toggle Button */
+.newton-sidebar-toggle-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  margin: 0 6px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  vertical-align: middle !important;
+  transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1) !important;
+  flex-shrink: 0 !important;
+}
+
+/* Button aesthetics in Newton School Grauity Dark Theme (Default Inactive State) */
+.grauity-theme-dark .newton-sidebar-toggle-btn:not(.active),
+body.grauity-theme-dark .newton-sidebar-toggle-btn:not(.active) {
+  background: #14171E !important;
+  background-color: #14171E !important;
+  border: 1px solid #242A36 !important;
+  color: #94A3B8 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.grauity-theme-dark .newton-sidebar-toggle-btn:not(.active):hover,
+body.grauity-theme-dark .newton-sidebar-toggle-btn:not(.active):hover {
+  background: #1E232B !important;
+  background-color: #1E232B !important;
+  border-color: #3B82F6 !important;
+  color: #F1F5F9 !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Active / Focus Mode (Sidebars Hidden) state */
+.grauity-theme-dark .newton-sidebar-toggle-btn.active,
+body.grauity-theme-dark .newton-sidebar-toggle-btn.active,
+body.newton-sidebars-hidden .newton-sidebar-toggle-btn,
+.grauity-theme-dark .newton-sidebar-toggle-btn[aria-pressed="true"],
+body.grauity-theme-dark .newton-sidebar-toggle-btn[aria-pressed="true"] {
+  background: #1E293B !important;
+  background-color: #1E293B !important;
+  border: 1px solid #3B82F6 !important;
+  border-color: #3B82F6 !important;
+  color: #38BDF8 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+.grauity-theme-dark .newton-sidebar-toggle-btn:focus-visible {
+  outline: 2px solid #3B82F6 !important;
+  outline-offset: 1px !important;
+}
+
+/* Light theme fallback */
+.grauity-theme-light .newton-sidebar-toggle-btn,
+body:not(.grauity-theme-dark) .newton-sidebar-toggle-btn {
+  background: #FFFFFF !important;
+  border: 1px solid #D9D9D9 !important;
+  color: #595959 !important;
+}
+
+.grauity-theme-light .newton-sidebar-toggle-btn:hover,
+body:not(.grauity-theme-dark) .newton-sidebar-toggle-btn:hover {
+  border-color: #4096EE !important;
+  color: #4096EE !important;
+}
+
+.grauity-theme-light .newton-sidebar-toggle-btn.active,
+body:not(.grauity-theme-dark) .newton-sidebar-toggle-btn.active {
+  background: #E6F4FF !important;
+  border-color: #1677FF !important;
+  color: #1677FF !important;
+}
+
+/* Button SVG Icon */
+.newton-sidebar-toggle-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: currentColor !important;
+  pointer-events: none !important;
+  display: block !important;
+}
+
+.newton-sidebar-toggle-btn.active .newton-sidebar-line-left,
+.newton-sidebar-toggle-btn.active .newton-sidebar-line-right {
+  stroke-dasharray: 2 2 !important;
+  opacity: 0.45 !important;
+}
+
+/* Floating Fallback Button (if header is delayed or absent) */
+.newton-sidebar-toggle-btn.newton-floating-toggle {
+  position: fixed !important;
+  top: 14px !important;
+  right: 18px !important;
+  z-index: 99999 !important;
+}
+
+/* Left Sidebar: Collapse cleanly */
+body.newton-sidebars-hidden .main-container > div:first-child > div:first-child,
+body.newton-sidebars-hidden .main-container > div:first-child > .sc-2974f9d9-0,
+body.newton-sidebars-hidden .main-container > div:first-child > .dzfdrs,
+body.newton-sidebars-hidden .main-container > div:first-child > [data-newton-sidebar-left],
+body.newton-sidebars-hidden .main-container > .sc-2974f9d9-0,
+body.newton-sidebars-hidden .main-container > .dzfdrs,
+body.newton-sidebars-hidden .main-container > [data-newton-sidebar-left],
+body.newton-sidebars-hidden [data-newton-sidebar-left],
+html[data-newton-sidebars-hidden="true"] body .main-container > div:first-child > div:first-child,
+html[data-newton-sidebars-hidden="true"] body [data-newton-sidebar-left] {
+  display: none !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  flex: 0 0 0% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+/* Right Sidebar: Collapse cleanly */
+body.newton-sidebars-hidden .main-container > div:first-child > div:nth-child(3),
+body.newton-sidebars-hidden .main-container > div:first-child > div:last-child:not(:nth-child(2)),
+body.newton-sidebars-hidden .main-container > div:first-child > .sc-3a0afb14-6,
+body.newton-sidebars-hidden .main-container > div:first-child > .cJtEaa,
+body.newton-sidebars-hidden .main-container > div:first-child > [data-newton-sidebar-right],
+body.newton-sidebars-hidden .main-container > .sc-3a0afb14-6,
+body.newton-sidebars-hidden .main-container > .cJtEaa,
+body.newton-sidebars-hidden .main-container > [data-newton-sidebar-right],
+body.newton-sidebars-hidden [data-newton-sidebar-right],
+body.newton-sidebars-hidden .main-container > div:first-child > div:has([data-newton-calendar]),
+html[data-newton-sidebars-hidden="true"] body .main-container > div:first-child > div:nth-child(3),
+html[data-newton-sidebars-hidden="true"] body [data-newton-sidebar-right] {
+  display: none !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  flex: 0 0 0% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+/* Center Content: Expand to 100% width */
+body.newton-sidebars-hidden .main-container > div:first-child > div:nth-child(2),
+body.newton-sidebars-hidden .main-container > div:first-child > .sc-fd4f3244-0,
+body.newton-sidebars-hidden .main-container > div:first-child > [data-newton-main-content],
+body.newton-sidebars-hidden .main-container > .sc-fd4f3244-0,
+body.newton-sidebars-hidden .main-container > [data-newton-main-content],
+body.newton-sidebars-hidden [data-newton-main-content],
+html[data-newton-sidebars-hidden="true"] body .main-container > div:first-child > div:nth-child(2),
+html[data-newton-sidebars-hidden="true"] body [data-newton-main-content] {
+  flex: 1 1 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Layout container width normalization */
+body.newton-sidebars-hidden .main-container > div:first-child,
+body.newton-sidebars-hidden [data-newton-layout-container],
+html[data-newton-sidebars-hidden="true"] body .main-container > div:first-child,
+html[data-newton-sidebars-hidden="true"] body [data-newton-layout-container] {
+  width: 100% !important;
+  max-width: 100% !important;
+  grid-template-columns: 1fr !important;
+}

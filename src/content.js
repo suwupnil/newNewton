@@ -8,6 +8,31 @@
   const GRAUITY_DARK = 'grauity-theme-dark';
   const THEME_PREF_KEY = 'theme-preference';
   const APP_THEME_KEY = 'app_theme_enabled';
+  const SIDEBARS_HIDDEN_KEY = 'newton_sidebars_hidden';
+
+  // Restore sidebar hidden preference as early as possible to avoid layout flash
+  const initialSidebarsHidden = (function () {
+    try {
+      return localStorage.getItem(SIDEBARS_HIDDEN_KEY) === 'true';
+    } catch (e) {
+      return false;
+    }
+  })();
+
+  if (initialSidebarsHidden) {
+    if (document.documentElement) {
+      document.documentElement.setAttribute('data-newton-sidebars-hidden', 'true');
+    }
+    if (document.body) {
+      document.body.classList.add('newton-sidebars-hidden');
+      document.body.setAttribute('data-newton-sidebars-hidden', 'true');
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('newton-sidebars-hidden');
+        document.body.setAttribute('data-newton-sidebars-hidden', 'true');
+      }, { once: true });
+    }
+  }
 
   function resolveEffectiveTheme(mode) {
     if (mode === 'system') {
@@ -69,22 +94,308 @@
     });
   }
 
-  // Listen for real-time messages from extension popup
+  // Listen for real-time messages from extension popup or other contexts
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'SET_THEME') {
         applyGrauityTheme(request.themeName);
         sendResponse({ success: true, theme: request.themeName });
+      } else if (request.action === 'TOGGLE_SIDEBARS') {
+        const newState = toggleSidebars();
+        sendResponse({ success: true, hidden: newState });
+      } else if (request.action === 'GET_SIDEBAR_STATE') {
+        sendResponse({ success: true, hidden: isSidebarsHidden() });
+      } else if (request.action === 'SET_SIDEBARS_HIDDEN') {
+        const newState = setSidebarsHidden(request.hidden);
+        sendResponse({ success: true, hidden: newState });
       }
       return true;
     });
   }
 
   /**
-   * Automatically tag key Newton School UI components with stable semantic data attributes.
-   * This ensures dark theme styling remains 100% resilient across frontend rebuilds
-   * without relying on volatile styled-components class hashes.
+   * Check whether sidebars are currently hidden (focus mode active)
    */
+  function isSidebarsHidden() {
+    if (document.body && document.body.classList.contains('newton-sidebars-hidden')) {
+      return true;
+    }
+    if (document.documentElement && document.documentElement.getAttribute('data-newton-sidebars-hidden') === 'true') {
+      return true;
+    }
+    try {
+      return localStorage.getItem(SIDEBARS_HIDDEN_KEY) === 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Synchronize button visual state, ARIA attributes, and tooltip
+   */
+  function updateButtonState(btn, isHidden) {
+    if (!btn) return;
+    const tooltipText = isHidden ? 'Show Sidebars (Alt+S)' : 'Hide Sidebars (Alt+S)';
+    btn.setAttribute('title', tooltipText);
+    btn.setAttribute('aria-label', tooltipText);
+    btn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+    btn.classList.toggle('active', isHidden);
+    btn.classList.toggle('newton-sidebars-collapsed', isHidden);
+  }
+
+  /**
+   * Set sidebar collapse state, updating DOM classes, attributes, localStorage, and button
+   */
+  function setSidebarsHidden(hidden) {
+    const isHidden = Boolean(hidden);
+    try {
+      localStorage.setItem(SIDEBARS_HIDDEN_KEY, isHidden ? 'true' : 'false');
+    } catch (e) {
+      console.warn('[Newton Enhancer] Could not persist sidebar state to localStorage:', e);
+    }
+
+    if (document.body) {
+      document.body.classList.toggle('newton-sidebars-hidden', isHidden);
+      document.body.setAttribute('data-newton-sidebars-hidden', isHidden ? 'true' : 'false');
+    }
+    if (document.documentElement) {
+      document.documentElement.setAttribute('data-newton-sidebars-hidden', isHidden ? 'true' : 'false');
+    }
+
+    const btn = document.getElementById('newton-sidebar-toggle-btn');
+    if (btn) {
+      updateButtonState(btn, isHidden);
+    }
+    return isHidden;
+  }
+
+  /**
+   * Toggle sidebars hidden/shown
+   */
+  function toggleSidebars() {
+    return setSidebarsHidden(!isSidebarsHidden());
+  }
+
+  /**
+   * Locate the top header / navbar and suitable insertion anchor
+   */
+  function findHeaderMountPoint() {
+    const headerCandidates = [
+      'header',
+      '[role="navigation"]',
+      '#__next > div > div:first-child > header',
+      '#__next > div > div:first-child nav',
+      '#__next > div > div:first-child',
+      '[class*="sc-3fcd8b21-1"]',
+      '[class*="sc-3d4c1f9d-0"]'
+    ];
+
+    let header = null;
+    for (let i = 0; i < headerCandidates.length; i++) {
+      const el = document.querySelector(headerCandidates[i]);
+      if (el) {
+        if (headerCandidates[i] === '#__next > div > div:first-child' && el.classList.contains('main-container')) {
+          continue;
+        }
+        header = el;
+        break;
+      }
+    }
+
+    if (!header) return null;
+
+    // Search for user actions, avatar, or right-hand items in header
+    const actionSelectors = [
+      '[class*="profile" i]',
+      '[class*="avatar" i]',
+      'img[alt*="avatar" i]',
+      'img[src*="avatar" i]',
+      '[class*="user" i]',
+      '[class*="dropdown" i]',
+      '[class*="right" i]',
+      'button[class*="ant-btn"]'
+    ];
+
+    for (let j = 0; j < actionSelectors.length; j++) {
+      const actionEl = header.querySelector(actionSelectors[j]);
+      if (actionEl && actionEl.id !== 'newton-sidebar-toggle-btn') {
+        const actionContainer = actionEl.closest('div');
+        if (actionContainer && header.contains(actionContainer)) {
+          return { container: actionContainer.parentElement || header, beforeNode: actionContainer };
+        }
+      }
+    }
+
+    const headerDivs = header.querySelectorAll(':scope > div');
+    if (headerDivs.length > 1) {
+      const lastDiv = headerDivs[headerDivs.length - 1];
+      return { container: lastDiv, beforeNode: lastDiv.firstChild };
+    } else if (headerDivs.length === 1) {
+      return { container: headerDivs[0], beforeNode: null };
+    }
+
+    return { container: header, beforeNode: null };
+  }
+
+  /**
+   * Ensure sidebar toggle button exists and is mounted in header (or floating fallback)
+   */
+  function ensureSidebarToggleButton() {
+    let btn = document.getElementById('newton-sidebar-toggle-btn');
+    const isHidden = isSidebarsHidden();
+
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'newton-sidebar-toggle-btn';
+      btn.className = 'ant-btn ant-btn-default ant-btn-icon-only sc-ec795657-0 newton-sidebar-toggle-btn';
+      btn.setAttribute('type', 'button');
+      btn.setAttribute('data-newton-sidebar-toggle', 'true');
+      btn.innerHTML = `
+        <svg class="newton-toggle-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="8" y1="3" x2="8" y2="21" class="newton-sidebar-line-left"></line>
+          <line x1="16" y1="3" x2="16" y2="21" class="newton-sidebar-line-right"></line>
+        </svg>
+      `;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSidebars();
+      });
+    }
+
+    updateButtonState(btn, isHidden);
+
+    // Mount to header or fallback
+    const mount = findHeaderMountPoint();
+    if (mount && mount.container) {
+      if (btn.parentElement !== mount.container || (mount.beforeNode && btn.nextSibling !== mount.beforeNode)) {
+        btn.classList.remove('newton-floating-toggle');
+        if (mount.beforeNode && mount.beforeNode.parentElement === mount.container) {
+          mount.container.insertBefore(btn, mount.beforeNode);
+        } else {
+          mount.container.appendChild(btn);
+        }
+      }
+    } else if (document.body && !document.body.contains(btn)) {
+      btn.classList.add('newton-floating-toggle');
+      document.body.appendChild(btn);
+    }
+
+    return btn;
+  }
+
+  /**
+   * Identify and semantically tag sidebar columns and center content
+   */
+  function tagSidebarLayout(root = document.body) {
+    if (!root) return;
+
+    // 1. Tag layout containers inside .main-container or root
+    const containers = root.querySelectorAll('.main-container > div:first-child, .main-container');
+    for (let i = 0; i < containers.length; i++) {
+      const container = containers[i];
+      if (container.id === 'dashboard-container' && !container.classList.contains('main-container')) {
+        continue;
+      }
+      const children = Array.from(container.children).filter(el => {
+        return !['SCRIPT', 'STYLE'].includes(el.tagName) && !el.hasAttribute('data-newton-sidebar-toggle');
+      });
+
+      if (children.length >= 2) {
+        let leftCol = null;
+        let centerCol = null;
+        let rightCol = null;
+
+        for (let c = 0; c < children.length; c++) {
+          const child = children[c];
+          const text = child.textContent || '';
+          const isLeft = child.classList.contains('sc-2974f9d9-0') ||
+                         child.classList.contains('dzfdrs') ||
+                         child.querySelector('a[href*="/home"], a[href*="/courses"], a[href*="/timeline"]') ||
+                         (c === 0 && children.length >= 3 && /home/i.test(text) && /courses/i.test(text));
+
+          const isRight = child.classList.contains('sc-3a0afb14-6') ||
+                          child.classList.contains('cJtEaa') ||
+                          child.hasAttribute('data-newton-calendar') ||
+                          child.querySelector('[data-newton-calendar], [class*="sc-3a0afb14"]') ||
+                          (c === children.length - 1 && children.length >= 3 && /calendar/i.test(text));
+
+          const isCenter = child.classList.contains('sc-fd4f3244-0') ||
+                           child.querySelector('[data-newton-card], [class*="sc-48b8f391"], [data-newton-lockin-block], h2, h3');
+
+          if (isLeft && !leftCol) {
+            leftCol = child;
+          } else if (isRight && !rightCol) {
+            rightCol = child;
+          } else if (isCenter && !centerCol) {
+            centerCol = child;
+          }
+        }
+
+        if (children.length === 3) {
+          if (!leftCol) leftCol = children[0];
+          if (!centerCol) centerCol = children[1];
+          if (!rightCol) rightCol = children[2];
+        }
+
+        if (leftCol) leftCol.setAttribute('data-newton-sidebar-left', 'true');
+        if (rightCol) rightCol.setAttribute('data-newton-sidebar-right', 'true');
+        if (centerCol) centerCol.setAttribute('data-newton-main-content', 'true');
+        if (leftCol || rightCol || centerCol) {
+          container.setAttribute('data-newton-layout-container', 'true');
+        }
+      }
+    }
+
+    // 2. Class-based elements
+    const leftEls = root.querySelectorAll('.sc-2974f9d9-0, .dzfdrs');
+    for (let i = 0; i < leftEls.length; i++) {
+      leftEls[i].setAttribute('data-newton-sidebar-left', 'true');
+    }
+
+    const centerEls = root.querySelectorAll('.sc-fd4f3244-0');
+    for (let i = 0; i < centerEls.length; i++) {
+      centerEls[i].setAttribute('data-newton-main-content', 'true');
+    }
+
+    const rightEls = root.querySelectorAll('.sc-3a0afb14-6, .cJtEaa');
+    for (let i = 0; i < rightEls.length; i++) {
+      rightEls[i].setAttribute('data-newton-sidebar-right', 'true');
+    }
+
+    // 3. Calendar column ancestor
+    const calEls = root.querySelectorAll('[data-newton-calendar]');
+    for (let i = 0; i < calEls.length; i++) {
+      let node = calEls[i];
+      while (node && node.parentElement && !node.parentElement.classList.contains('main-container') && !node.parentElement.hasAttribute('data-newton-layout-container')) {
+        if (node.parentElement === document.body) break;
+        node = node.parentElement;
+      }
+      if (node && node !== document.body && !node.classList.contains('main-container') && !node.hasAttribute('data-newton-main-content')) {
+        node.setAttribute('data-newton-sidebar-right', 'true');
+      }
+    }
+  }
+
+  // Keyboard shortcut: Alt+S (or Option+S on macOS)
+  function handleKeyDown(e) {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'KeyS' || e.key === 's' || e.key === 'S' || e.key === 'ß')) {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.isContentEditable ||
+        activeEl.getAttribute('role') === 'textbox'
+      );
+      if (!isInput) {
+        e.preventDefault();
+        toggleSidebars();
+      }
+    }
+  }
+  window.addEventListener('keydown', handleKeyDown);
+
   /**
    * Automatically tag key Newton School UI components with stable semantic data attributes.
    * This ensures dark theme styling remains 100% resilient across frontend rebuilds
@@ -282,6 +593,10 @@
         sb.setAttribute('data-newton-completed', 'true');
       }
     }
+
+    // 7. Tag sidebar columns and mount toggle button
+    tagSidebarLayout(root);
+    ensureSidebarToggleButton();
   }
 
   let tagTimeout = null;
@@ -290,11 +605,13 @@
     tagTimeout = setTimeout(() => {
       tagTimeout = null;
       tagSemanticElements(document.body);
+      tagSidebarLayout(document.body);
+      ensureSidebarToggleButton();
     }, 150);
   }
 
   // Observer to ensure Next.js route transitions or re-renders do not strip the theme class
-  // and keep semantic attributes synchronized
+  // or sidebar collapse state, and keep semantic attributes synchronized
   const observer = new MutationObserver((mutations) => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.get(['themeMode', 'themeName'], (result) => {
@@ -312,6 +629,13 @@
       });
     }
 
+    // Ensure body keeps newton-sidebars-hidden class if Next.js route change stripped it
+    const shouldBeHidden = isSidebarsHidden();
+    if (document.body && shouldBeHidden && !document.body.classList.contains('newton-sidebars-hidden')) {
+      document.body.classList.add('newton-sidebars-hidden');
+      document.body.setAttribute('data-newton-sidebars-hidden', 'true');
+    }
+
     // Schedule semantic tagging on DOM changes
     scheduleTagging();
   });
@@ -327,12 +651,23 @@
 
   // Expose for explicit test execution
   window.tagSemanticElements = tagSemanticElements;
+  window.tagSidebarLayout = tagSidebarLayout;
+  window.ensureSidebarToggleButton = ensureSidebarToggleButton;
+  window.toggleSidebars = toggleSidebars;
+  window.setSidebarsHidden = setSidebarsHidden;
+  window.isSidebarsHidden = isSidebarsHidden;
 
-  // Initial tagging immediately when DOM is ready without waiting on debounce timeout
+  // Initial tagging and button mounting immediately when DOM is ready
   if (document.body) {
     tagSemanticElements(document.body);
+    tagSidebarLayout(document.body);
+    ensureSidebarToggleButton();
   }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => tagSemanticElements(document.body), { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      tagSemanticElements(document.body);
+      tagSidebarLayout(document.body);
+      ensureSidebarToggleButton();
+    }, { once: true });
   }
 })();
