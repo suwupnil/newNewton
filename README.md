@@ -13,7 +13,7 @@ Newton School's frontend contains a native dark theme built on their internal **
 2. Synchronizing the selected theme with Newton School's internal `localStorage` (`theme-preference` and `app_theme_enabled`).
 3. Enforcing the native `grauity-theme-dark` / `grauity-theme-light` classes directly on `document.body`.
 4. Using a `MutationObserver` to ensure theme classes persist seamlessly during Next.js single-page navigation and client-side page re-renders.
-5. Operating with zero unnecessary CSS overrides, relying purely on Newton's native Grauity theme tokens.
+5. Providing targeted, scoped dark theme enhancements in `dark-theme.css` to fix incomplete surfaces in Newton's Grauity theme (e.g. blinding white datepicker popups, illegible quiz titles, and un-themed pages).
 
 ---
 
@@ -23,9 +23,10 @@ Newton School's frontend contains a native dark theme built on their internal **
 /Users/swap/Developer/newton-enhancer/
 ├── manifest.json              # Chrome MV3 configuration & permissions
 ├── PROJECT_SUMMARY.md         # Project documentation and handover guide
+├── README.md                  # Project README
 └── src/
     ├── content.js             # Content script: theme application & persistence
-    ├── dark-theme.css         # Minimal styling file (reserved for native mode)
+    ├── dark-theme.css         # Scoped dark theme contrast & styling overrides
     ├── popup.html             # Extension popup UI (Segmented control)
     ├── popup.css              # Popup styling (Material Design 3 aesthetic)
     ├── popup.js               # Popup logic & chrome.storage state sync
