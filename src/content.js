@@ -80,8 +80,50 @@
     });
   }
 
+  /**
+   * Automatically tag key Newton School UI components with stable semantic data attributes.
+   * This ensures dark theme styling remains 100% resilient across frontend rebuilds
+   * without relying on volatile styled-components class hashes.
+   */
+  function tagSemanticElements(root = document.body) {
+    if (!root) return;
+
+    // 1. Tag "due tomorrow" and deadline badges
+    const elements = root.querySelectorAll('div, span, p, h1, h2, h3, h4');
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (el.children.length === 0 && el.textContent) {
+        const text = el.textContent.trim();
+        // Due / deadline badge (e.g. "due tomorrow", "due on 25 Sept")
+        if (/^due\s+(tomorrow|today|on|\d)/i.test(text)) {
+          el.setAttribute('data-newton-due-badge', 'true');
+        }
+        // Section headings
+        if (text === 'Calendar' && el.parentElement) {
+          el.parentElement.setAttribute('data-newton-calendar', 'true');
+        } else if (text === 'Your lectures' && el.parentElement) {
+          el.parentElement.setAttribute('data-newton-lectures', 'true');
+        } else if (text === 'Your Sessions' && el.parentElement) {
+          el.parentElement.setAttribute('data-newton-sessions', 'true');
+        } else if (/^\d+%\s*(\(\d+\/\d+\))?$/.test(text) || /^(\d+\/\d+)$/.test(text)) {
+          el.setAttribute('data-newton-perf-stat', 'true');
+        }
+      }
+    }
+  }
+
+  let tagTimeout = null;
+  function scheduleTagging() {
+    if (tagTimeout) return;
+    tagTimeout = setTimeout(() => {
+      tagTimeout = null;
+      tagSemanticElements(document.body);
+    }, 150);
+  }
+
   // Observer to ensure Next.js route transitions or re-renders do not strip the theme class
-  const observer = new MutationObserver(() => {
+  // and keep semantic attributes synchronized
+  const observer = new MutationObserver((mutations) => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.get(['themeMode', 'themeName'], (result) => {
         const mode = result.themeMode || 'light';
@@ -97,13 +139,24 @@
         }
       });
     }
+
+    // Schedule semantic tagging on DOM changes
+    scheduleTagging();
   });
 
   if (document.documentElement) {
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class'],
-      subtree: false
+      childList: true,
+      subtree: true
     });
+  }
+
+  // Initial tagging when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => scheduleTagging(), { once: true });
+  } else {
+    scheduleTagging();
   }
 })();

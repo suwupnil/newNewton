@@ -20,8 +20,8 @@ body.grauity-theme-dark {
 
 /* 2. Dark-Toned SVG Action & Task Icons (Rewatch, refresh, etc.) */
 .grauity-theme-dark img[src*="rewatch.svg"],
-.grauity-theme-dark img.cZNoNQ,
-.grauity-theme-dark img.sc-48b8f391-3,
+.grauity-theme-dark img[src*="rewatch"],
+.grauity-theme-dark img[alt*="rewatch" i],
 .grauity-theme-dark [class*="sc-48b8f391-3"] {
   filter: brightness(0) invert(0.95) !important;
 }
@@ -35,13 +35,11 @@ body.grauity-theme-dark {
 }
 
 /* 3. Sticky Lecture & Navigation Headers (Eliminates pure white bars) */
+.grauity-theme-dark header,
+.grauity-theme-dark nav,
+.grauity-theme-dark [role="navigation"],
 .grauity-theme-dark [class*="sc-3fcd8b21-1"],
-.grauity-theme-dark .dmUuiN,
-.grauity-theme-dark [class*="sc-3d4c1f9d-0"],
-.grauity-theme-dark .ilMKMx,
-.grauity-theme-dark .vBSQf,
-.grauity-theme-dark [class*="sc-a2f1d575-1"],
-.grauity-theme-dark .elTmoc {
+.grauity-theme-dark [class*="sc-3d4c1f9d-0"] {
   background-color: #0B0C0E !important;
   border-bottom: 1px solid #1E232B !important;
 }
@@ -58,6 +56,8 @@ body.grauity-theme-dark {
 }
 
 /* 4. "Due Tomorrow" and Due Date Badge (Crimson Red with high contrast text) */
+.grauity-theme-dark [data-newton-due-badge],
+.grauity-theme-dark div:has(> [primarycolor]) > div:first-child > div:last-child,
 .grauity-theme-dark [class*="sc-48b8f391-11"],
 .grauity-theme-dark .dzkLCZ {
   background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 100%) !important;
@@ -71,6 +71,7 @@ body.grauity-theme-dark {
 }
 
 /* 5. Task Cards & Elevation (Strictly without unwanted borders) */
+.grauity-theme-dark div:has(> [primarycolor]):not(:has([primarycolor="#007A51"])),
 .grauity-theme-dark [class*="sc-48b8f391-10"],
 .grauity-theme-dark [class*="sc-48b8f391-10"].iCKKEZ,
 .grauity-theme-dark [class*="sc-48b8f391-10"].idLgft,
@@ -83,6 +84,7 @@ body.grauity-theme-dark {
 }
 
 /* Completed Card: Dark Slate with subtle emerald tone */
+.grauity-theme-dark div:has([primarycolor="#007A51"]),
 .grauity-theme-dark [class*="sc-48b8f391-10"].osmtW,
 .grauity-theme-dark .osmtW {
   background: #0F1E19 !important;
@@ -92,6 +94,7 @@ body.grauity-theme-dark {
 }
 
 /* Task Card Tag / Pill Header (Subject title e.g. "Maths I - D", "PSP - D") */
+.grauity-theme-dark div:has(> [primarycolor]) > div:first-child > div:first-child,
 .grauity-theme-dark [class*="sc-48b8f391-12"],
 .grauity-theme-dark [class*="sc-48b8f391-13"],
 .grauity-theme-dark .VTmhJ,
@@ -100,6 +103,7 @@ body.grauity-theme-dark {
 }
 
 /* Task Card Main Title (e.g. "M1 Post Class Assignment 1") */
+.grauity-theme-dark div:has([primarycolor]) h3,
 .grauity-theme-dark [class*="sc-48b8f391-19"],
 .grauity-theme-dark .hCeLpq {
   color: #FFFFFF !important;
@@ -114,6 +118,7 @@ body.grauity-theme-dark {
 }
 
 /* Task Card Footer */
+.grauity-theme-dark div:has(> [primarycolor]),
 .grauity-theme-dark [class*="sc-48b8f391-21"],
 .grauity-theme-dark .jkwPqk {
   background: transparent !important;
@@ -121,6 +126,7 @@ body.grauity-theme-dark {
 }
 
 /* Task Card Solve / Action Button */
+.grauity-theme-dark div:has(> [primarycolor]) button,
 .grauity-theme-dark [class*="sc-48b8f391-23"],
 .grauity-theme-dark .knBExv,
 .grauity-theme-dark [class*="sc-48b8f391-10"] button.sc-ec795657-0 {
@@ -132,12 +138,14 @@ body.grauity-theme-dark {
   font-weight: 600 !important;
 }
 
+.grauity-theme-dark div:has(> [primarycolor]) button *,
 .grauity-theme-dark [class*="sc-48b8f391-23"] *,
 .grauity-theme-dark .knBExv *,
 .grauity-theme-dark [class*="sc-48b8f391-10"] button.sc-ec795657-0 * {
   color: #FFFFFF !important;
 }
 
+.grauity-theme-dark div:has(> [primarycolor]) button:hover,
 .grauity-theme-dark [class*="sc-48b8f391-23"]:hover,
 .grauity-theme-dark .knBExv:hover,
 .grauity-theme-dark [class*="sc-48b8f391-10"] button.sc-ec795657-0:hover {
@@ -145,12 +153,15 @@ body.grauity-theme-dark {
 }
 
 /* 6. "Number of Solved" & Statistics Progress Indicators */
+.grauity-theme-dark [primarycolor],
+.grauity-theme-dark [secondarycolor],
 .grauity-theme-dark [class*="sc-48b8f391-22"],
 .grauity-theme-dark .fMZYpR {
   color: #94A3B8 !important;
 }
 
 /* Solved number count (previously #16191D black) */
+.grauity-theme-dark [primarycolor] span,
 .grauity-theme-dark [class*="sc-48b8f391-22"] span,
 .grauity-theme-dark .fMZYpR span {
   color: #FFFFFF !important;
@@ -158,11 +169,13 @@ body.grauity-theme-dark {
 }
 
 /* Completed cards: solved number count */
+.grauity-theme-dark [primarycolor="#007A51"] span,
 .grauity-theme-dark [class*="sc-48b8f391-22"].TCIGy span,
 .grauity-theme-dark .TCIGy span {
   color: #34D399 !important;
   font-weight: 600 !important;
 }
+.grauity-theme-dark [primarycolor="#007A51"],
 .grauity-theme-dark [class*="sc-48b8f391-22"].TCIGy,
 .grauity-theme-dark .TCIGy {
   color: #A7F3D0 !important;
@@ -175,6 +188,7 @@ body.grauity-theme-dark {
 }
 
 /* Overview "Your performance" percentage & count (e.g. "83%", "(40/48)") */
+.grauity-theme-dark [data-newton-perf-stat],
 .grauity-theme-dark [class*="sc-d5728374-17"] {
   color: #FFFFFF !important;
   font-weight: 600 !important;
@@ -202,12 +216,14 @@ body.grauity-theme-dark {
 }
 
 /* 7. "Your lectures" Section Text Contrast */
+.grauity-theme-dark [data-newton-lectures] h2,
 .grauity-theme-dark [class*="sc-e17cca1c-3"],
 .grauity-theme-dark .iqXakl {
   color: #F1F5F9 !important;
   font-weight: 600 !important;
 }
 
+.grauity-theme-dark [data-newton-lectures] p,
 .grauity-theme-dark [class*="sc-e17cca1c-4"],
 .grauity-theme-dark .kpsplj {
   color: #94A3B8 !important;
@@ -227,6 +243,7 @@ body.grauity-theme-dark {
 }
 
 /* 8. "Your Sessions" & "Group Sessions" Section Contrast */
+.grauity-theme-dark [data-newton-sessions] h2,
 .grauity-theme-dark [class*="sc-fc7236bb-1"],
 .grauity-theme-dark .kCLmkV {
   color: #F1F5F9 !important;
@@ -267,6 +284,8 @@ body.grauity-theme-dark {
 }
 
 /* 9. Calendar Widget (Right Sidebar) */
+.grauity-theme-dark [data-newton-calendar] h2,
+.grauity-theme-dark [data-newton-calendar] > div:first-child,
 .grauity-theme-dark [class*="sc-3a0afb14-2"],
 .grauity-theme-dark .gdQFBC {
   color: #F1F5F9 !important;
@@ -279,12 +298,14 @@ body.grauity-theme-dark {
 }
 
 /* Active / Selected Date Badge (solid blue pill with white text) */
+.grauity-theme-dark [data-newton-calendar] div[style*="flex"] > div:first-child,
 .grauity-theme-dark [class*="sc-3a0afb14-8"].cSCMqQ,
 .grauity-theme-dark [class*="sc-3a0afb14-8"][class*="cSCMqQ"] {
   background: #2563EB !important;
   border: 1px solid #3B82F6 !important;
   border-radius: 8px !important;
 }
+.grauity-theme-dark [data-newton-calendar] div[style*="flex"] > div:first-child div,
 .grauity-theme-dark [class*="sc-3a0afb14-8"].cSCMqQ [class*="sc-3a0afb14-9"],
 .grauity-theme-dark [class*="sc-3a0afb14-8"].cSCMqQ [class*="sc-3a0afb14-10"] {
   color: #FFFFFF !important;
@@ -292,11 +313,13 @@ body.grauity-theme-dark {
 }
 
 /* Inactive Date Indicators */
+.grauity-theme-dark [data-newton-calendar] div[style*="flex"] > div:not(:first-child) > div:first-child,
 .grauity-theme-dark [class*="sc-3a0afb14-8"].kkjrry [class*="sc-3a0afb14-9"],
 .grauity-theme-dark [class*="sc-3a0afb14-8"]:not([class*="cSCMqQ"]) [class*="sc-3a0afb14-9"],
 .grauity-theme-dark .kkjrry .ivlBrY {
   color: #E2E8F0 !important;
 }
+.grauity-theme-dark [data-newton-calendar] div[style*="flex"] > div:not(:first-child) > div:last-child,
 .grauity-theme-dark [class*="sc-3a0afb14-8"].kkjrry [class*="sc-3a0afb14-10"],
 .grauity-theme-dark [class*="sc-3a0afb14-8"]:not([class*="cSCMqQ"]) [class*="sc-3a0afb14-10"],
 .grauity-theme-dark .kkjrry .cueKoh {
@@ -304,6 +327,7 @@ body.grauity-theme-dark {
 }
 
 /* Schedule Items: Session Type (e.g. "Lecture") */
+.grauity-theme-dark [data-newton-calendar] div:has(> div:last-child) > div:first-child,
 .grauity-theme-dark [class*="sc-3a0afb14-16"],
 .grauity-theme-dark .jzAWmZ,
 .grauity-theme-dark .fFOxgz {
@@ -312,17 +336,20 @@ body.grauity-theme-dark {
 }
 
 /* Schedule Items: Subject / Course Name */
+.grauity-theme-dark [data-newton-calendar] div:has(> div:last-child) > div:last-child > div:first-child,
 .grauity-theme-dark [class*="sc-3a0afb14-15"] > [class*="sc-3a0afb14-17"]:first-child {
   color: #CBD5E1 !important;
 }
 
 /* Schedule Items: Time (e.g. "8:40 AM - 10:00 AM") */
+.grauity-theme-dark [data-newton-calendar] div:has(> div:last-child) > div:last-child > div:last-child,
 .grauity-theme-dark [class*="sc-3a0afb14-15"] > [class*="sc-3a0afb14-17"]:last-child,
 .grauity-theme-dark [class*="sc-3a0afb14-17"].ipshSc {
   color: #94A3B8 !important;
 }
 
 /* Schedule Item Separators */
+.grauity-theme-dark [data-newton-calendar] div[style*="border-bottom"],
 .grauity-theme-dark [class*="sc-3a0afb14-7"],
 .grauity-theme-dark .jjjYJr {
   border-bottom: 1px solid #212631 !important;
@@ -381,10 +408,11 @@ body.grauity-theme-dark {
 }
 
 /* 11. Native Theme Toggle Button in User Dropdown (Scoped removal) */
-.grauity-theme-dark [class*="sc-d6ac4dda-23"] > button[aria-label="sun-filled"],
-.grauity-theme-dark [class*="sc-d6ac4dda-23"] > button:has(i[name="sun-filled"]),
-.grauity-theme-dark [class*="sc-d6ac4dda-23"] > button:has(i[name*="moon"]),
-.grauity-theme-dark .ehCqpV > button.jpGXBV {
+.grauity-theme-dark button[aria-label="sun-filled"],
+.grauity-theme-dark button[aria-label*="sun" i],
+.grauity-theme-dark button:has(i[name="sun-filled"]),
+.grauity-theme-dark button:has(i[name*="moon"]),
+.grauity-theme-dark [class*="sc-d6ac4dda-23"] > button[aria-label="sun-filled"] {
   display: none !important;
 }
 
