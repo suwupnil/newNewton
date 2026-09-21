@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Newton Enhancer",
+  "version": "1.0.0",
+  "description": "UX Enhancer for Newton School - Native Grauity Theme Switcher and enhancements",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://my.newtonschool.co/*",
+    "https://*.newtonschool.co/*"
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "src/icons/icon16.png",
+      "48": "src/icons/icon48.png",
+      "128": "src/icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://my.newtonschool.co/*",
+        "https://*.newtonschool.co/*"
+      ],
+      "css": [
+        "src/dark-theme.css"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "icons": {
+    "16": "src/icons/icon16.png",
+    "48": "src/icons/icon48.png",
+    "128": "src/icons/icon128.png"
+  }
+}
