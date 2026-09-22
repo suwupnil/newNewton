@@ -5,7 +5,6 @@
  * and active tab message passing.
  */
 
-const applyBtn = document.getElementById('applyBtn');
 const statusMessage = document.getElementById('statusMessage');
 const segmentBtns = document.querySelectorAll('.segment-btn');
 const telemetryToggle = document.getElementById('telemetryToggle');
@@ -134,20 +133,6 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', asy
   });
 });
 
-// 5. Manual "Apply to Active Tab" button
-applyBtn.addEventListener('click', async () => {
-  chrome.storage.sync.get(['themeMode', 'themeName', 'blockTelemetry'], async (result) => {
-    const mode = result.themeMode || 'light';
-    const effectiveTheme = resolveEffectiveTheme(mode);
-    const targetClass = effectiveTheme === 'dark' ? 'grauity-theme-dark' : 'grauity-theme-light';
-    const isBlocked = result.blockTelemetry !== undefined ? result.blockTelemetry : true;
-
-    await notifyActiveTab(effectiveTheme, targetClass, mode);
-    await notifyActiveTabTelemetry(isBlocked);
-
-    showStatus('Settings applied to active tab');
-  });
-});
 
 /**
  * Safely send theme message to content script or execute fallback script
