@@ -26,9 +26,6 @@
         "https://my.newtonschool.co/*",
         "https://*.newtonschool.co/*"
       ],
-      "css": [
-        "src/dark-theme.css"
-      ],
       "js": [
         "src/content.js"
       ],

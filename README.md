@@ -13,7 +13,7 @@ Newton School's frontend contains a native dark theme built on their internal **
 2. Synchronizing the selected theme with Newton School's internal `localStorage` (`theme-preference` and `app_theme_enabled`).
 3. Enforcing the native `grauity-theme-dark` / `grauity-theme-light` classes directly on `document.body`.
 4. Using a `MutationObserver` to ensure theme classes persist seamlessly during Next.js single-page navigation and client-side page re-renders.
-5. Providing targeted, scoped dark theme enhancements in `dark-theme.css` to fix incomplete surfaces in Newton's Grauity theme (e.g. blinding white datepicker popups, illegible quiz titles, and un-themed pages).
+5. Exclusively leveraging Newton's inbuilt Grauity dark theme with zero external CSS injections.
 
 ---
 
@@ -26,7 +26,6 @@ Newton School's frontend contains a native dark theme built on their internal **
 ├── README.md                  # Project README
 └── src/
     ├── content.js             # Content script: theme application & persistence
-    ├── dark-theme.css         # Scoped dark theme contrast & styling overrides
     ├── popup.html             # Extension popup UI (Segmented control)
     ├── popup.css              # Popup styling (Material Design 3 aesthetic)
     ├── popup.js               # Popup logic & chrome.storage state sync
@@ -44,7 +43,7 @@ Newton School's frontend contains a native dark theme built on their internal **
 - **Manifest Version**: 3
 - **Permissions**: `storage`, `activeTab`, `scripting`
 - **Host Permissions**: `https://my.newtonschool.co/*`, `https://*.newtonschool.co/*`
-- **Content Scripts**: Injects `src/content.js` and `src/dark-theme.css` at `document_start` on matching Newton School subdomains.
+- **Content Scripts**: Injects `src/content.js` at `document_start` on matching Newton School subdomains.
 
 ### B. Content Script (`src/content.js`)
 - **Body Class Management**:
