@@ -5,7 +5,6 @@
  * and active tab message passing.
  */
 
-const currentThemeTag = document.getElementById('currentThemeTag');
 const applyBtn = document.getElementById('applyBtn');
 const statusMessage = document.getElementById('statusMessage');
 const segmentBtns = document.querySelectorAll('.segment-btn');
@@ -45,9 +44,6 @@ function updatePopupUI(mode) {
   } else {
     document.body.classList.add('theme-light');
   }
-
-  // Update badge tag
-  currentThemeTag.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
 }
 
 /**

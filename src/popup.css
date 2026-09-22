@@ -177,6 +177,17 @@ body {
   transition: all 0.2s ease;
 }
 
+.beta-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: var(--brand-light);
+  color: var(--brand-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .tag-blocked {
   background-color: var(--success-light);
   color: var(--success-color);
