@@ -1,19 +1,18 @@
-# Newton Enhancer — Project Summary
+# Newton Enhancer — Project Summary & Architecture Guide
 
-A Manifest V3 Chrome extension designed for Newton School (`my.newtonschool.co`) that provides native theme switching between **Light**, **Dark**, and **System** modes.
+A Manifest V3 Chrome extension designed for Newton School (`my.newtonschool.co`) that provides native theme switching between **Light**, **Dark**, and **System** modes, alongside a high-performance **Telemetry, Diagnostic & Tracking Blocker**.
 
 ---
 
 ## 1. Project Overview
 
-Newton School's frontend contains a native dark theme built on their internal **Grauity** design system. However, the platform does not expose an accessible theme toggle to all students, and Next.js client-side page routing frequently clears body classes.
+Newton School's frontend contains:
+1. An internal **Grauity** design system with a built-in dark theme (`grauity-theme-dark`). However, the platform does not expose an accessible theme toggle to all students, and Next.js client-side page routing frequently strips body classes.
+2. Numerous embedded analytics, session recording, screen capture, diagnostic report uploads, and tracker pixels (Microsoft Clarity, Google Analytics/GTM, Mixpanel, CleverTap, OpenPanel, Sentry/Datadog diagnostic services, and `/api/v1/user/report/` telemetry endpoints).
 
-**Newton Enhancer** solves this by:
-1. Providing a clean, Material Design 3-inspired popup UI to toggle between **Light**, **Dark**, and **System** themes.
-2. Synchronizing the selected theme with Newton School's internal `localStorage` (`theme-preference` and `app_theme_enabled`).
-3. Enforcing the native `grauity-theme-dark` / `grauity-theme-light` classes directly on `document.body`.
-4. Using a `MutationObserver` to ensure theme classes persist seamlessly during Next.js single-page navigation and client-side page re-renders.
-5. Exclusively leveraging Newton's inbuilt Grauity dark theme with zero external CSS injections.
+**Newton Enhancer** addresses both needs cleanly:
+- **Native Grauity Theme Switcher**: 3-way toggle (Light / Dark / System) that persists to Newton's native `localStorage` keys and enforces `grauity-theme-dark` / `grauity-theme-light` without injecting any custom CSS overrides.
+- **Privacy & Telemetry Blocker**: Dual-layer blocking protection that stops diagnostic uploads, session recordings, analytics, and third-party trackers with an easy-to-use toggle in the popup UI.
 
 ---
 
@@ -21,14 +20,16 @@ Newton School's frontend contains a native dark theme built on their internal **
 
 ```text
 /Users/swap/Developer/newton-enhancer/
-├── manifest.json              # Chrome MV3 configuration & permissions
-├── PROJECT_SUMMARY.md         # Project documentation and handover guide
-├── README.md                  # Project README
+├── manifest.json              # Chrome MV3 configuration, permissions, & content scripts
+├── PROJECT_SUMMARY.md         # Detailed technical documentation and architectural reference
+├── README.md                  # Project README & user guide
 └── src/
-    ├── content.js             # Content script: theme application & persistence
-    ├── popup.html             # Extension popup UI (Segmented control)
-    ├── popup.css              # Popup styling (Material Design 3 aesthetic)
-    ├── popup.js               # Popup logic & chrome.storage state sync
+    ├── background.js          # Background service worker: declarativeNetRequest dynamic rules
+    ├── telemetry-blocker.js   # Main-world script: crash-proof stubs & beacon/fetch/XHR interceptors
+    ├── content.js             # Isolated-world content script: theme enforcement & state synchronization
+    ├── popup.html             # Popup UI (Grauity theme switcher & Telemetry toggle)
+    ├── popup.css              # Popup styling (Material Design 3 aesthetic, light & dark mode)
+    ├── popup.js               # Popup controller & chrome.storage state sync
     └── icons/
         ├── icon16.png         # 16x16 icon
         ├── icon48.png         # 48x48 icon
@@ -37,52 +38,65 @@ Newton School's frontend contains a native dark theme built on their internal **
 
 ---
 
-## 3. Core Components
+## 3. Core Features & Technical Implementation
 
-### A. Manifest Configuration (`manifest.json`)
-- **Manifest Version**: 3
-- **Permissions**: `storage`, `activeTab`, `scripting`
-- **Host Permissions**: `https://my.newtonschool.co/*`, `https://*.newtonschool.co/*`
-- **Content Scripts**: Injects `src/content.js` at `document_start` on matching Newton School subdomains.
+### A. Telemetry, Tracking & Diagnostic Blocker (Dual-Layer Protection)
 
-### B. Content Script (`src/content.js`)
-- **Body Class Management**:
-  - Adds `grauity-theme-dark` and removes `grauity-theme-light` when dark mode is active.
-  - Adds `grauity-theme-light` and removes `grauity-theme-dark` when light mode is active.
-- **LocalStorage Sync**:
-  ```javascript
-  localStorage.setItem('theme-preference', JSON.stringify({
-    themeName: themeName,
-    enable_platform_wide_dark_theme: isDark
-  }));
-  localStorage.setItem('app_theme_enabled', isDark ? 'true' : 'false');
-  ```
-- **Next.js Route Transition Handling**:
-  - A `MutationObserver` watches `document.documentElement` attribute changes. If Next.js client-side routing strips the theme class from `<body>`, the observer immediately re-applies the expected theme class.
-- **Dynamic System Theme Listener**:
-  - Uses `window.matchMedia('(prefers-color-scheme: dark)')` to react dynamically when OS-level dark/light mode shifts while in "System" mode.
-- **Runtime Messaging**:
-  - Listens for `SET_THEME` actions dispatched from the popup UI for instant, reload-free theme switching.
+Blocking tracking on a Next.js / React single-page application requires dual-layer protection to avoid breaking JavaScript execution:
+
+1. **Network Layer (`src/background.js` — `declarativeNetRequest`)**:
+   - Manages dynamic rules with `declarativeNetRequest` scoped to requests initiated by `newtonschool.co` and `my.newtonschool.co`.
+   - Blocks network requests matching:
+     - **Microsoft Clarity**: `||clarity.ms`, `||c.clarity.ms` (session recordings, screen capture, heatmaps)
+     - **Google Analytics & GTM**: `||google-analytics.com`, `||analytics.google.com`, `||googletagmanager.com`
+     - **Product Analytics**: `||mixpanel.com`, `||api.mixpanel.com`, `||clevertap.com`, `||wizrocket.com`, `||openpanel.dev`
+     - **Ad Pixels**: `||facebook.com/tr`, `||connect.facebook.net`, `||px.ads.linkedin.com`, `||snap.licdn.com`, `||trc.taboola.com`, `||q.quora.com`, `||hotjar.com`
+     - **Diagnostic Services**: `||sentry.io`, `||datadoghq.com`, `||fullstory.com`, `||logrocket.io`
+     - **Newton Diagnostic Endpoint**: `||newtonschool.co/api/v1/user/report/` (internal web diagnostic and telemetry reporting)
+
+2. **In-Page Stub Layer (`src/telemetry-blocker.js` — `"world": "MAIN"`)**:
+   - Runs in the webpage's main execution context at `document_start` before any page scripts or inline scripts run.
+   - **Crash-Proof Stubs**: Provides recursive `Proxy` stubs for tracking globals (`window.clarity`, `window.mixpanel`, `window.clevertap`, `window.openpanel`, `window.fbq`, `window.lintrk`, `window.qp`, `window.gtag`, `window.ga`, `window.dataLayer`). This guarantees that calls like `mixpanel.people.set(...)` or `clarity('set', ...)` succeed harmlessly without throwing `TypeError: Cannot read properties of undefined`.
+   - **Beacon Interception**: Intercepts `navigator.sendBeacon` and silently drops diagnostic payloads matching telemetry patterns while returning `true` to signal success.
+   - **Fetch & XHR Interception**: Intercepts `window.fetch` and `XMLHttpRequest` to immediately return synthetic `{ blocked: true, status: "ok" }` responses for diagnostic reporting calls without causing network errors or React error boundary trips.
+   - **Real-Time Toggle**: Listens for toggle events via custom DOM events, window `postMessage`, and `localStorage` to turn blocking ON or OFF on the fly.
+
+### B. Native Grauity Theme Switcher
+
+1. **Class Enforcement**:
+   - Applies `grauity-theme-dark` (or `grauity-theme-light`) directly to `document.body`.
+   - No custom CSS stylesheet overrides: cleanly relies on Newton's internal Grauity CSS variables and tokens.
+2. **Persistence**:
+   - Synchronizes selection with `localStorage`:
+     ```javascript
+     localStorage.setItem('theme-preference', JSON.stringify({
+       themeName: themeName,
+       enable_platform_wide_dark_theme: isDark
+     }));
+     localStorage.setItem('app_theme_enabled', isDark ? 'true' : 'false');
+     ```
+3. **Next.js Route Transition Resistance**:
+   - Employs a `MutationObserver` on `document.documentElement` to instantly re-apply the theme if Next.js page transitions strip the body class.
+4. **System Mode Synchronization**:
+   - Supports 3 modes: **Light**, **Dark**, and **System** (listening dynamically to OS color-scheme shifts via `window.matchMedia`).
 
 ### C. Popup UI (`src/popup.html`, `src/popup.css`, `src/popup.js`)
-- **3-Way Segmented Control**:
-  - **Light**: Forces `grauity-theme-light`.
-  - **Dark**: Forces `grauity-theme-dark`.
-  - **System**: Automatically matches the user's operating system color scheme.
-- **State Persistence**:
-  - Stored in `chrome.storage.sync` under keys `themeMode` (`'light' | 'dark' | 'system'`) and `themeName` (`'light' | 'dark'`).
-- **Resilient Dispatch**:
-  - Communicates directly with the active tab via `chrome.tabs.sendMessage`.
-  - Includes a fallback using `chrome.scripting.executeScript` in case the extension popup is opened before the content script has finished initializing.
+
+- **Theme Segmented Control**: 3-button pill control (Light / Dark / System).
+- **Telemetry Switch**: Modern toggle switch with real-time status badge (`Blocked` in green, `Allowed` in red) and checklist showing protected categories.
+- **Apply Button**: Forces immediate sync across both theme and telemetry settings to the active tab.
 
 ---
 
-## 4. Key Platform Findings (Newton School)
+## 4. Permissions & Manifest V3 Configuration
 
-- **Frontend Tech Stack**: Next.js, React, styled-components.
-- **Theme Tokens**: The native dark mode is triggered via class `grauity-theme-dark` on `document.body` (and `<html>`).
-- **State Storage**: Newton School checks `localStorage.getItem('theme-preference')` and `localStorage.getItem('app_theme_enabled')` on initial mount.
-- **Styled-Components Caution**: Styled-components classes (such as `sc-xxxxxx-xx` and arbitrary 5–7 character hashes) change whenever Newton School updates and rebuilds their client bundles. Any custom features must use stable, semantic DOM attributes or relative selectors rather than styled-components hashes.
+- **`storage`**: Persists user settings (`themeMode`, `themeName`, `blockTelemetry`) via `chrome.storage.sync`.
+- **`declarativeNetRequest`**: Dynamically activates or deactivates network blocking rules without requiring broad webRequest blocking overhead.
+- **`activeTab` & `scripting`**: Dispatches real-time messages and fallback execution to the active Newton School tab.
+- **`host_permissions`**: Scoped strictly to `https://my.newtonschool.co/*` and `https://*.newtonschool.co/*`.
+- **Content Scripts**:
+  - `src/telemetry-blocker.js`: `"world": "MAIN"`, `"run_at": "document_start"`.
+  - `src/content.js`: `"world": "ISOLATED"`, `"run_at": "document_start"`.
 
 ---
 
@@ -92,15 +106,10 @@ Newton School's frontend contains a native dark theme built on their internal **
 2. Navigate to `chrome://extensions/`.
 3. Enable **Developer mode** via the toggle switch in the top-right corner.
 4. Click **Load unpacked**.
-5. Select the project directory: `/Users/swap/Developer/newton-enhancer`.
+5. Select the extension directory: `/Users/swap/Developer/newton-enhancer`.
 6. Visit [https://my.newtonschool.co](https://my.newtonschool.co).
-7. Click the **Newton Enhancer** icon in the Chrome toolbar to switch between **Light**, **Dark**, and **System** modes.
-
----
-
-## 6. Git Status
-
-The project is initialized as a clean Git repository:
-- Main branch: `main`
-- Path: `/Users/swap/Developer/newton-enhancer`
-- Clean working tree with history recorded.
+7. Open the extension popup:
+   - Toggle theme between **Light**, **Dark**, and **System**.
+   - Toggle **Telemetry & Tracking** ON to block tracking and diagnostic uploads, or OFF to allow.
+8. Inspect Network and Console in Chrome DevTools:
+   - Notice requests to Clarity, Mixpanel, CleverTap, and `/api/v1/user/report/` are blocked without throwing any JavaScript runtime errors.

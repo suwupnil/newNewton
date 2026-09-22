@@ -19,6 +19,7 @@
     </header>
 
     <main class="content">
+      <!-- UI Theme Card -->
       <div class="card theme-card">
         <div class="card-header-row">
           <div>
@@ -62,6 +63,44 @@
             </svg>
             <span>System</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Telemetry & Tracking Blocker Card -->
+      <div class="card privacy-card">
+        <div class="card-header-row privacy-row">
+          <div class="privacy-header-content">
+            <div class="title-row">
+              <span class="card-title">Telemetry & Tracking</span>
+              <span id="telemetryStatusTag" class="theme-tag tag-blocked">Blocked</span>
+            </div>
+            <p class="card-description">Block diagnostics, session recordings & tracker pixels.</p>
+          </div>
+          <label class="switch" for="telemetryToggle" aria-label="Toggle Telemetry Blocking">
+            <input type="checkbox" id="telemetryToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="privacy-details">
+          <div class="privacy-item" id="itemClarity">
+            <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Clarity & Session Recordings</span>
+          </div>
+          <div class="privacy-item" id="itemAnalytics">
+            <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Mixpanel & CleverTap Trackers</span>
+          </div>
+          <div class="privacy-item" id="itemDiagnostics">
+            <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Diagnostic & Report Uploads</span>
+          </div>
         </div>
       </div>
 

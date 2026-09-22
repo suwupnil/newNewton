@@ -1,13 +1,17 @@
 /**
  * Newton Enhancer - Popup Controller
  * Manages 3-way theme selection (Light, Dark, System), popup theme styling,
- * chrome.storage persistence, and active tab message passing.
+ * telemetry/diagnostic blocking toggle, chrome.storage persistence,
+ * and active tab message passing.
  */
 
 const currentThemeTag = document.getElementById('currentThemeTag');
 const applyBtn = document.getElementById('applyBtn');
 const statusMessage = document.getElementById('statusMessage');
 const segmentBtns = document.querySelectorAll('.segment-btn');
+const telemetryToggle = document.getElementById('telemetryToggle');
+const telemetryStatusTag = document.getElementById('telemetryStatusTag');
+const privacyItems = document.querySelectorAll('.privacy-item');
 
 /**
  * Determine effective theme considering system preferences
@@ -32,8 +36,6 @@ function updatePopupUI(mode) {
     }
   });
 
-  const effectiveTheme = resolveEffectiveTheme(mode);
-
   // Update popup body theme
   document.body.className = '';
   if (mode === 'system') {
@@ -48,6 +50,22 @@ function updatePopupUI(mode) {
   currentThemeTag.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
 }
 
+/**
+ * Update telemetry status tag and checklist visual states
+ */
+function updateTelemetryUI(isBlocked) {
+  telemetryToggle.checked = isBlocked;
+  if (isBlocked) {
+    telemetryStatusTag.textContent = 'Blocked';
+    telemetryStatusTag.className = 'theme-tag tag-blocked';
+    privacyItems.forEach(item => item.classList.remove('disabled'));
+  } else {
+    telemetryStatusTag.textContent = 'Allowed';
+    telemetryStatusTag.className = 'theme-tag tag-allowed';
+    privacyItems.forEach(item => item.classList.add('disabled'));
+  }
+}
+
 function showStatus(text, isSuccess = true) {
   statusMessage.textContent = text;
   statusMessage.className = isSuccess ? 'status-message success' : 'status-message';
@@ -56,10 +74,13 @@ function showStatus(text, isSuccess = true) {
   }, 2500);
 }
 
-// 1. Load saved theme mode on popup open
-chrome.storage.sync.get(['themeMode', 'themeName'], (result) => {
+// 1. Load saved settings on popup open
+chrome.storage.sync.get(['themeMode', 'themeName', 'blockTelemetry'], (result) => {
   const mode = result.themeMode || (result.themeName === 'dark' ? 'dark' : 'light');
   updatePopupUI(mode);
+
+  const isBlocked = result.blockTelemetry !== undefined ? result.blockTelemetry : true;
+  updateTelemetryUI(isBlocked);
 });
 
 // 2. Handle Segment Button clicks (Light / Dark / System)
@@ -84,7 +105,27 @@ segmentBtns.forEach(btn => {
   });
 });
 
-// 3. Listen to system preference changes when in 'system' mode
+// 3. Handle Telemetry Blocker Toggle
+telemetryToggle.addEventListener('change', async () => {
+  const isBlocked = telemetryToggle.checked;
+  updateTelemetryUI(isBlocked);
+
+  // Persist preference
+  await chrome.storage.sync.set({ blockTelemetry: isBlocked });
+
+  // Update background service worker dynamic rules immediately
+  chrome.runtime.sendMessage({
+    action: 'SET_TELEMETRY_BLOCK',
+    blockTelemetry: isBlocked
+  });
+
+  // Notify active tab
+  await notifyActiveTabTelemetry(isBlocked);
+
+  showStatus(isBlocked ? 'Telemetry blocking enabled' : 'Telemetry blocking disabled');
+});
+
+// 4. Listen to system preference changes when in 'system' mode
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', async (e) => {
   chrome.storage.sync.get(['themeMode'], async (result) => {
     if (result.themeMode === 'system') {
@@ -97,19 +138,23 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', asy
   });
 });
 
-// 4. Manual "Apply to Active Tab" button
+// 5. Manual "Apply to Active Tab" button
 applyBtn.addEventListener('click', async () => {
-  chrome.storage.sync.get(['themeMode', 'themeName'], async (result) => {
+  chrome.storage.sync.get(['themeMode', 'themeName', 'blockTelemetry'], async (result) => {
     const mode = result.themeMode || 'light';
     const effectiveTheme = resolveEffectiveTheme(mode);
     const targetClass = effectiveTheme === 'dark' ? 'grauity-theme-dark' : 'grauity-theme-light';
+    const isBlocked = result.blockTelemetry !== undefined ? result.blockTelemetry : true;
+
     await notifyActiveTab(effectiveTheme, targetClass, mode);
-    showStatus('Theme applied to tab');
+    await notifyActiveTabTelemetry(isBlocked);
+
+    showStatus('Settings applied to active tab');
   });
 });
 
 /**
- * Safely send message to content script or execute fallback script
+ * Safely send theme message to content script or execute fallback script
  */
 async function notifyActiveTab(themeName, targetClass, themeMode) {
   try {
@@ -122,10 +167,8 @@ async function notifyActiveTab(themeName, targetClass, themeMode) {
         themeName: themeName,
         targetClass: targetClass,
         themeMode: themeMode
-      }, (response) => {
-        // Check for runtime error (e.g. content script not yet connected)
+      }, () => {
         if (chrome.runtime.lastError) {
-          // Verify if scripting API is available before calling
           if (chrome.scripting && chrome.scripting.executeScript) {
             chrome.scripting.executeScript({
               target: { tabId: tab.id },
@@ -152,5 +195,49 @@ async function notifyActiveTab(themeName, targetClass, themeMode) {
     }
   } catch (err) {
     console.error('Error updating active tab theme:', err);
+  }
+}
+
+/**
+ * Send telemetry blocker toggle to content script
+ */
+async function notifyActiveTabTelemetry(isBlocked) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id) return;
+
+    if (tab.url && tab.url.includes('newtonschool.co')) {
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'SET_TELEMETRY_BLOCK',
+        blockTelemetry: isBlocked
+      }, () => {
+        if (chrome.runtime.lastError) {
+          // Tab may not have content script initialized or needs reload
+          if (chrome.scripting && chrome.scripting.executeScript) {
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: (blocked) => {
+                try {
+                  localStorage.setItem('newton_enhancer_block_telemetry', blocked ? 'true' : 'false');
+                } catch (e) {}
+                if (document.documentElement) {
+                  document.documentElement.setAttribute('data-newton-block-telemetry', blocked ? 'true' : 'false');
+                }
+                window.dispatchEvent(new CustomEvent('newton_enhancer_telemetry_toggle', {
+                  detail: { enabled: blocked }
+                }));
+                window.postMessage({
+                  source: 'newton-enhancer-telemetry',
+                  enabled: blocked
+                }, '*');
+              },
+              args: [isBlocked]
+            }).catch(err => console.warn('Telemetry script fallback failed:', err));
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Error notifying tab of telemetry change:', err);
   }
 }

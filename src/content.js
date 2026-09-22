@@ -1,6 +1,7 @@
 /**
  * Newton Enhancer - Content Script
- * Synchronizes and enforces the selected Grauity theme on Newton School pages.
+ * Synchronizes and enforces the selected Grauity theme on Newton School pages
+ * and relays telemetry blocking preferences to the main-world execution context.
  */
 
 (function () {
@@ -8,6 +9,7 @@
   const GRAUITY_DARK = 'grauity-theme-dark';
   const THEME_PREF_KEY = 'theme-preference';
   const APP_THEME_KEY = 'app_theme_enabled';
+  const TELEMETRY_STORAGE_KEY = 'newton_enhancer_block_telemetry';
 
   function resolveEffectiveTheme(mode) {
     if (mode === 'system') {
@@ -47,16 +49,43 @@
     }
   }
 
-  // Initial load: check chrome.storage
+  /**
+   * Synchronize telemetry blocker state with main-world script and localStorage
+   */
+  function syncTelemetryState(shouldBlock) {
+    try {
+      localStorage.setItem(TELEMETRY_STORAGE_KEY, shouldBlock ? 'true' : 'false');
+    } catch (e) {}
+
+    if (document.documentElement) {
+      document.documentElement.setAttribute('data-newton-block-telemetry', shouldBlock ? 'true' : 'false');
+    }
+
+    // Broadcast to main world script
+    window.dispatchEvent(new CustomEvent('newton_enhancer_telemetry_toggle', {
+      detail: { enabled: shouldBlock }
+    }));
+    window.postMessage({
+      source: 'newton-enhancer-telemetry',
+      enabled: shouldBlock
+    }, '*');
+  }
+
+  // 1. Initial load: check chrome.storage for theme and telemetry
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['themeMode', 'themeName'], (result) => {
+    chrome.storage.sync.get(['themeMode', 'themeName', 'blockTelemetry'], (result) => {
+      // Theme
       const mode = result.themeMode || 'light';
       const effectiveTheme = resolveEffectiveTheme(mode);
       applyGrauityTheme(effectiveTheme);
+
+      // Telemetry
+      const shouldBlock = result.blockTelemetry !== undefined ? result.blockTelemetry : true;
+      syncTelemetryState(shouldBlock);
     });
   }
 
-  // Listen for system theme changes in background
+  // 2. Listen for system theme changes in background
   if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
@@ -69,18 +98,39 @@
     });
   }
 
-  // Listen for real-time messages from extension popup
+  // 3. Listen for chrome.storage changes (e.g. from popup toggle)
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'sync') {
+        if (changes.blockTelemetry !== undefined) {
+          syncTelemetryState(changes.blockTelemetry.newValue);
+        }
+        if (changes.themeMode !== undefined || changes.themeName !== undefined) {
+          chrome.storage.sync.get(['themeMode', 'themeName'], (result) => {
+            const mode = result.themeMode || 'light';
+            const effectiveTheme = resolveEffectiveTheme(mode);
+            applyGrauityTheme(effectiveTheme);
+          });
+        }
+      }
+    });
+  }
+
+  // 4. Listen for real-time runtime messages from extension popup
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'SET_THEME') {
         applyGrauityTheme(request.themeName);
         sendResponse({ success: true, theme: request.themeName });
+      } else if (request.action === 'SET_TELEMETRY_BLOCK') {
+        syncTelemetryState(request.blockTelemetry);
+        sendResponse({ success: true, blockTelemetry: request.blockTelemetry });
       }
       return true;
     });
   }
 
-  // Observer to ensure Next.js route transitions or re-renders do not strip the theme class
+  // 5. Observer to ensure Next.js route transitions or re-renders do not strip the theme class
   const observer = new MutationObserver(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.get(['themeMode', 'themeName'], (result) => {
