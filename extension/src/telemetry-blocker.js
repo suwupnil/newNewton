@@ -69,6 +69,8 @@
     /clevertap\.com/i,
     /wizrocket\.com/i,
     /openpanel\.dev/i,
+    /openpanel-api\.newtonschool\.co/i,
+    /openpanel/i,
     /facebook\.com\/tr/i,
     /connect\.facebook\.net/i,
     /px\.ads\.linkedin\.com/i,
@@ -137,6 +139,7 @@
   if (!window.mixpanel) window.mixpanel = createStubProxy('mixpanel');
   if (!window.clevertap) window.clevertap = createStubProxy('clevertap');
   if (!window.openpanel) window.openpanel = createStubProxy('openpanel');
+  if (!window.op) window.op = createStubProxy('op');
   if (!window.fbq) window.fbq = createStubProxy('fbq');
   if (!window.lintrk) window.lintrk = createStubProxy('lintrk');
   if (!window.qp) window.qp = createStubProxy('qp');

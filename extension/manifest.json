@@ -6,12 +6,14 @@
   "permissions": [
     "storage",
     "activeTab",
+    "tabs",
     "scripting",
     "declarativeNetRequest"
   ],
   "host_permissions": [
     "https://my.newtonschool.co/*",
-    "https://*.newtonschool.co/*"
+    "https://*.newtonschool.co/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "background": {
     "service_worker": "src/background.js"

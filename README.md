@@ -13,6 +13,8 @@ Newton School's frontend contains:
 **newNewton** addresses both needs cleanly:
 - **Native Grauity Theme Switcher**: 3-way toggle (Light / Dark / System) that persists to Newton's native `localStorage` keys and enforces `grauity-theme-dark` / `grauity-theme-light` without injecting any custom CSS overrides.
 - **Privacy & Telemetry Blocker**: Dual-layer blocking protection that stops diagnostic uploads, session recordings, analytics, and third-party trackers with an easy-to-use toggle in the popup UI.
+- **Top 4-Part Navigation**: Modular navbar dividing the extension into Utilities, Mess Menu, Attendance, and Mystery.
+- **Campus Mess Menu**: Weekly live mess menu fetched from GitHub raw JSON with Monday auto-refresh, smart specials vs staples classification, 7-day selector, and real-time meal detection ("Serving Now" / "Next Up").
 
 ---
 
@@ -20,20 +22,22 @@ Newton School's frontend contains:
 
 ```text
 /Users/swap/Developer/newton-enhancer/
-├── manifest.json              # Chrome MV3 configuration, permissions, & content scripts
-├── PROJECT_SUMMARY.md         # Detailed technical documentation and architectural reference
-├── README.md                  # Project README & user guide
-└── src/
-    ├── background.js          # Background service worker: declarativeNetRequest dynamic rules
-    ├── telemetry-blocker.js   # Main-world script: crash-proof stubs & beacon/fetch/XHR interceptors
-    ├── content.js             # Isolated-world content script: theme enforcement & state synchronization
-    ├── popup.html             # Popup UI (Grauity theme switcher & Telemetry toggle)
-    ├── popup.css              # Popup styling (Material Design 3 aesthetic, light & dark mode)
-    ├── popup.js               # Popup controller & chrome.storage state sync
-    └── icons/
-        ├── icon16.png         # 16x16 icon
-        ├── icon48.png         # 48x48 icon
-        └── icon128.png        # 128x128 icon
+├── README.md                      # Project README & user guide
+├── menu.json                      # Reference campus mess menu
+└── extension/                     # Chrome Extension (Load Unpacked)
+    ├── manifest.json              # Chrome MV3 configuration, permissions, & content scripts
+    └── src/
+        ├── background.js          # Background service worker: declarativeNetRequest dynamic rules
+        ├── telemetry-blocker.js   # Main-world script: crash-proof stubs & beacon/fetch/XHR interceptors
+        ├── content.js             # Isolated-world content script: theme enforcement & state synchronization
+        ├── popup.html             # Multi-tab popup UI (Utilities, Mess Menu, Attendance, Mystery)
+        ├── popup.css              # Popup styling (Material Design 3 aesthetic, light & dark mode)
+        ├── popup.js               # Multi-tab controller, weekly menu sync & chrome.storage state
+        ├── menu.json              # Bundled fallback menu data
+        └── icons/
+            ├── icon16.png         # 16x16 icon
+            ├── icon48.png         # 48x48 icon
+            └── icon128.png        # 128x128 icon
 ```
 
 ---
@@ -49,14 +53,14 @@ Blocking tracking on a Next.js / React single-page application requires dual-lay
    - Blocks network requests matching:
      - **Microsoft Clarity**: `||clarity.ms`, `||c.clarity.ms` (session recordings, screen capture, heatmaps)
      - **Google Analytics & GTM**: `||google-analytics.com`, `||analytics.google.com`, `||googletagmanager.com`
-     - **Product Analytics**: `||mixpanel.com`, `||api.mixpanel.com`, `||clevertap.com`, `||wizrocket.com`, `||openpanel.dev`
+     - **Product Analytics**: `||mixpanel.com`, `||api.mixpanel.com`, `||clevertap.com`, `||wizrocket.com`, `||openpanel.dev`, `||openpanel-api.newtonschool.co`
      - **Ad Pixels**: `||facebook.com/tr`, `||connect.facebook.net`, `||px.ads.linkedin.com`, `||snap.licdn.com`, `||trc.taboola.com`, `||q.quora.com`, `||hotjar.com`
      - **Diagnostic Services**: `||sentry.io`, `||datadoghq.com`, `||fullstory.com`, `||logrocket.io`
      - **Newton Diagnostic Endpoint**: `||newtonschool.co/api/v1/user/report/` (internal web diagnostic and telemetry reporting)
 
 2. **In-Page Stub Layer (`src/telemetry-blocker.js` — `"world": "MAIN"`)**:
    - Runs in the webpage's main execution context at `document_start` before any page scripts or inline scripts run.
-   - **Crash-Proof Stubs**: Provides recursive `Proxy` stubs for tracking globals (`window.clarity`, `window.mixpanel`, `window.clevertap`, `window.openpanel`, `window.fbq`, `window.lintrk`, `window.qp`, `window.gtag`, `window.ga`, `window.dataLayer`). This guarantees that calls like `mixpanel.people.set(...)` or `clarity('set', ...)` succeed harmlessly without throwing `TypeError: Cannot read properties of undefined`.
+   - **Crash-Proof Stubs**: Provides recursive `Proxy` stubs for tracking globals (`window.clarity`, `window.mixpanel`, `window.clevertap`, `window.openpanel`, `window.op`, `window.fbq`, `window.lintrk`, `window.qp`, `window.gtag`, `window.ga`, `window.dataLayer`). This guarantees that calls like `mixpanel.people.set(...)` or `clarity('set', ...)` succeed harmlessly without throwing `TypeError: Cannot read properties of undefined`.
    - **Beacon Interception**: Intercepts `navigator.sendBeacon` and silently drops diagnostic payloads matching telemetry patterns while returning `true` to signal success.
    - **Fetch & XHR Interception**: Intercepts `window.fetch` and `XMLHttpRequest` to immediately return synthetic `{ blocked: true, status: "ok" }` responses for diagnostic reporting calls without causing network errors or React error boundary trips.
    - **Real-Time Toggle**: Listens for toggle events via custom DOM events, window `postMessage`, and `localStorage` to turn blocking ON or OFF on the fly.
@@ -80,20 +84,32 @@ Blocking tracking on a Next.js / React single-page application requires dual-lay
 4. **System Mode Synchronization**:
    - Supports 3 modes: **Light**, **Dark**, and **System** (listening dynamically to OS color-scheme shifts via `window.matchMedia`).
 
-### C. Popup UI (`src/popup.html`, `src/popup.css`, `src/popup.js`)
+### C. Campus Mess Menu Subsystem (`src/popup.js`, `src/popup.html`, `src/popup.css`)
 
-- **Theme Segmented Control**: 3-button pill control (Light / Dark / System).
-- **Telemetry Switch**: Modern toggle switch with real-time status badge (`Blocked` in green, `Allowed` in red) and checklist showing protected categories.
-- **Apply Button**: Forces immediate sync across both theme and telemetry settings to the active tab.
+- **Weekly Upstream Sync**: Fetches the weekly menu JSON from GitHub raw (`https://raw.githubusercontent.com/suwupnil/newNewton/refs/heads/main/menu.json`).
+- **Monday Auto-Refresh**: Caches the menu locally in `chrome.storage.local`. Automatically detects when a new Monday has occurred or if 7 days have elapsed, triggering a background refresh while showing cached data instantly (0ms latency).
+- **Dish Classification (`isSecondaryItem`)**:
+  - **✨ Special & Main**: Highlights special signature dishes (Onion Uttapam, Rajma Masala, Gulab Jamun, Soya Chaap, Paneer Matar, Pizza, Wada Pav, etc.) with accented pill badges and colored indicator dots.
+  - **Daily Staples**: Groups mundane everyday items (milk, tea, chapati, rice, green salad, sambar, rasam, curd, pickles, chutneys) into clean, muted tags so students can scan the specials at a glance.
+- **7-Day Selector Bar**: Quickly switch between Monday through Sunday with dynamic date display (e.g. `Wed, 30 Sep`) and real-world today detection.
+- **Real-Time Meal Detection**:
+  - Automatically flags the active meal with a glowing `● Serving Now` badge during service hours (Breakfast: 07:30–09:30 AM, Lunch: 12:00–02:30 PM, Snacks: 04:30–06:30 PM, Dinner: 07:30–09:30 PM).
+  - Flags the next meal with `Next Up` and auto-expands it on today's view.
+- **Offline & Bundled Fallback**: Includes a bundled `menu.json` so the menu displays reliably even without network access.
+- **Manual Force Refresh**: Header button with spinning animation to force-sync the latest menu anytime.
+
+### D. Attendance & Mystery Placeholders
+- **Attendance**: Coming soon module for automated LMS attendance sync, margin calculation, and bunk safety alerts.
+- **Mystery**: Secret module placeholder reserved for upcoming releases.
 
 ---
 
 ## 4. Permissions & Manifest V3 Configuration
 
-- **`storage`**: Persists user settings (`themeMode`, `themeName`, `blockTelemetry`) via `chrome.storage.sync`.
+- **`storage`**: Persists user settings (`themeMode`, `themeName`, `blockTelemetry`, `mess_menu_data`) via `chrome.storage.sync` and `chrome.storage.local`.
 - **`declarativeNetRequest`**: Dynamically activates or deactivates network blocking rules without requiring broad webRequest blocking overhead.
 - **`activeTab` & `scripting`**: Dispatches real-time messages and fallback execution to the active Newton School tab.
-- **`host_permissions`**: Scoped strictly to `https://my.newtonschool.co/*` and `https://*.newtonschool.co/*`.
+- **`host_permissions`**: Scoped strictly to `https://my.newtonschool.co/*`, `https://*.newtonschool.co/*`, and `https://raw.githubusercontent.com/*`.
 - **Content Scripts**:
   - `src/telemetry-blocker.js`: `"world": "MAIN"`, `"run_at": "document_start"`.
   - `src/content.js`: `"world": "ISOLATED"`, `"run_at": "document_start"`.
@@ -106,7 +122,7 @@ Blocking tracking on a Next.js / React single-page application requires dual-lay
 2. Navigate to `chrome://extensions/`.
 3. Enable **Developer mode** via the toggle switch in the top-right corner.
 4. Click **Load unpacked**.
-5. Select the extension directory: `/Users/swap/Developer/newton-enhancer`.
+5. Select the extension directory: `/Users/swap/Developer/newton-enhancer/extension`.
 6. Visit [https://my.newtonschool.co](https://my.newtonschool.co).
 7. Open the extension popup:
    - Toggle theme between **Light**, **Dark**, and **System**.

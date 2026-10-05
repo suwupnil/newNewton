@@ -21,6 +21,7 @@ const TELEMETRY_FILTERS = [
   '||wizrocket.com',
   '||openpanel.dev',
   '||api.openpanel.dev',
+  '||openpanel-api.newtonschool.co',
   // Ad pixels & third-party tracking
   '||facebook.com/tr',
   '||connect.facebook.net',

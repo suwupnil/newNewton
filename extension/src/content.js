@@ -125,10 +125,35 @@
       } else if (request.action === 'SET_TELEMETRY_BLOCK') {
         syncTelemetryState(request.blockTelemetry);
         sendResponse({ success: true, blockTelemetry: request.blockTelemetry });
+      } else if (request.action === 'GET_PORTAL_AUTH') {
+        let token = null;
+        try {
+          const raw = localStorage.getItem('auth-token');
+          token = raw ? (raw.startsWith('"') ? JSON.parse(raw) : raw) : null;
+        } catch (e) {}
+        const courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
+        sendResponse({ token, courseHash });
       }
       return true;
     });
   }
+
+  // 5. Sync portal auth token for background attendance access
+  function syncPortalAuth() {
+    try {
+      const raw = localStorage.getItem('auth-token');
+      if (raw) {
+        const token = raw.startsWith('"') ? JSON.parse(raw) : raw;
+        const courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
+        chrome.storage.local.set({
+          nst_auth_token: token,
+          nst_portal_course_hash: courseHash,
+          nst_portal_last_seen: Date.now()
+        });
+      }
+    } catch (e) {}
+  }
+  syncPortalAuth();
 
   // 5. Observer to ensure Next.js route transitions or re-renders do not strip the theme class
   const observer = new MutationObserver(() => {
