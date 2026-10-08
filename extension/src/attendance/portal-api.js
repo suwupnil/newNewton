@@ -195,11 +195,13 @@ export async function fetchFullAttendanceData({ token, preferredCourseHash = nul
     // Extract missed lectures across all components in this subject
     const missedLectures = group.units.flatMap(u => {
       const compLabel = componentLabel(u);
+      const isPractical = Boolean(u.parsed?.isPractical || (compLabel.toLowerCase() !== 'lecture'));
       return (u.lectures || [])
         .filter(l => !l.attended)
         .map(l => ({
           ...l,
-          component: compLabel
+          component: compLabel,
+          isPractical
         }));
     }).sort((a, b) => new Date(b.start || 0) - new Date(a.start || 0));
 
@@ -211,7 +213,8 @@ export async function fetchFullAttendanceData({ token, preferredCourseHash = nul
         name: u.name,
         held: u.held,
         attended: u.attended,
-        component: componentLabel(u)
+        component: componentLabel(u),
+        isPractical: Boolean(u.parsed?.isPractical || (componentLabel(u).toLowerCase() !== 'lecture'))
       })),
       attended,
       held,

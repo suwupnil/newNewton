@@ -4,10 +4,11 @@
  * Features:
  * 1. Top Navbar Navigation across 4 tabs:
  *    - Utilities (Theme Switcher & Telemetry Blocker)
- *    - Mess Menu (RU Campus Mess Schedule with Monday weekly refresh)
+ *    - Mess Menu (RU Campus Mess Schedule maintained by Garvit-png, weekly refresh)
  *    - Attendance (Rollup logic powered by nst-attendance by yats0x7)
  *    - Mystery (Placeholder)
  * 2. Mess Menu Subsystem:
+ *    - Maintained upstream by Garvit-png (https://github.com/Garvit-png)
  *    - Fetches weekly menu from GitHub raw JSON (updates Mondays)
  *    - Caches locally in chrome.storage.local for 1 week
  *    - Classifies dishes into Specials & Staples via isSecondaryItem()
@@ -142,20 +143,17 @@ function isSecondaryItem(item) {
 
   // List of specific common items from the source code
   const commonItems = new Set([
-    "hot milk", "cold milk", "tea", "coffee powder", "cold coffee", 
-    "bread", "butter", "jam", "bread/butter/jam", "green salad", 
-    "tossed salad", "cucumber salad", "onion lachha", "laccha pyaaz", 
-    "chana sprout salad", "moong sprout salad", "cucumber-carrot salad", 
-    "ketchup", "chutney", "green chutney", "pickle", "curd", 
-    "sambar", "rasam", "chapati", "rice", "plain rice", 
+    "hot milk", "cold milk", "tea", "coffee powder", "cold coffee",
+    "bread", "butter", "jam", "bread/butter/jam", "green salad",
+    "tossed salad", "cucumber salad", "onion lachha", "laccha pyaaz",
+    "chana sprout salad", "moong sprout salad", "cucumber-carrot salad",
+    "ketchup", "chutney", "green chutney", "pickle", "curd",
+    "sambar", "rasam", "chapati", "rice", "plain rice",
     "steamed rice", "jeera rice", "ghee rice", "dum pulao sada"
   ]);
 
   // List of keywords that automatically categorize an item as secondary
-  const commonKeywords = [
-    "milk", "tea", "bread", "chapati", "rice", 
-    "salad", "chutney", "ketchup", "rasam", "sambar"
-  ];
+  const commonKeywords = ["milk", "tea", "bread", "chapati", "rice", "salad", "chutney", "ketchup", "rasam", "sambar"];
 
   // Check for exact match in the set
   if (commonItems.has(name)) return true;
@@ -232,14 +230,24 @@ function updatePopupUI(mode) {
     }
   });
 
-  document.body.className = '';
+  const effectiveTheme = resolveEffectiveTheme(mode);
+  const targetClass = effectiveTheme === 'dark' ? 'theme-dark' : 'theme-light';
+
+  document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-system');
+  document.body.classList.remove('theme-dark', 'theme-light', 'theme-system');
+
+  document.documentElement.classList.add(targetClass);
+  document.body.classList.add(targetClass);
+
   if (mode === 'system') {
+    document.documentElement.classList.add('theme-system');
     document.body.classList.add('theme-system');
-  } else if (mode === 'dark') {
-    document.body.classList.add('theme-dark');
-  } else {
-    document.body.classList.add('theme-light');
   }
+
+  try {
+    localStorage.setItem('popup_theme_mode', mode);
+    localStorage.setItem('popup_theme_name', effectiveTheme);
+  } catch (e) { }
 }
 
 function updateTelemetryUI(isBlocked) {
@@ -274,7 +282,7 @@ function switchTab(targetTabId) {
 
   try {
     chrome.storage.local.set({ activeTab: targetTabId });
-  } catch (e) {}
+  } catch (e) { }
 
   // If opening mess menu and data not loaded yet, initiate load
   if (targetTabId === 'tabMessMenu' && !currentMenuData) {
@@ -369,7 +377,7 @@ async function loadMenuData(forceRefresh = false) {
   let cached = null;
   try {
     cached = await chrome.storage.local.get(['mess_menu_data', 'mess_menu_last_fetched']);
-  } catch (e) {}
+  } catch (e) { }
 
   const hasCachedData = cached && cached.mess_menu_data && typeof cached.mess_menu_data === 'object';
   const needsRefresh = forceRefresh || !hasCachedData || isCacheExpired(cached.mess_menu_last_fetched);
@@ -658,9 +666,15 @@ function initMessMenu() {
 // 8. UTILITIES TAB CONTROLLER (Theme & Telemetry Blocker)
 // ========================================================
 
-// Load saved settings
+// Immediately apply theme from synchronous localStorage on script execution
+try {
+  const cachedMode = localStorage.getItem('popup_theme_mode') || 'system';
+  updatePopupUI(cachedMode);
+} catch (e) { }
+
+// Load saved settings from chrome.storage.sync
 chrome.storage.sync.get(['themeMode', 'themeName', 'blockTelemetry'], (result) => {
-  const mode = result.themeMode || (result.themeName === 'dark' ? 'dark' : 'light');
+  const mode = result.themeMode || (result.themeName === 'dark' ? 'dark' : (localStorage.getItem('popup_theme_mode') || 'system'));
   updatePopupUI(mode);
 
   const isBlocked = result.blockTelemetry !== undefined ? result.blockTelemetry : true;
@@ -747,7 +761,7 @@ async function notifyActiveTab(themeName, targetClass, themeMode) {
                   enable_platform_wide_dark_theme: name === 'dark'
                 }));
                 localStorage.setItem('app_theme_enabled', name === 'dark' ? 'true' : 'false');
-              } catch (e) {}
+              } catch (e) { }
             },
             args: [targetClass, themeName]
           }).catch(err => console.warn('Theme script fallback failed:', err));
@@ -776,7 +790,7 @@ async function notifyActiveTabTelemetry(isBlocked) {
             func: (blocked) => {
               try {
                 localStorage.setItem('newton_enhancer_block_telemetry', blocked ? 'true' : 'false');
-              } catch (e) {}
+              } catch (e) { }
               if (document.documentElement) {
                 document.documentElement.setAttribute('data-newton-block-telemetry', blocked ? 'true' : 'false');
               }
@@ -862,6 +876,191 @@ function formatLectureDate(timestamp) {
   return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
+function isLabItem(item) {
+  if (item?.isPractical === true) return true;
+  if (item?.isPractical === false) return false;
+  const comp = (item?.component || '').toLowerCase();
+  return comp !== 'lecture' && comp !== 'theory';
+}
+
+function buildMissedClassesHtml(subject) {
+  const missed = subject.missedLectures || [];
+  if (missed.length === 0) {
+    if (subject.held > 0) {
+      return `
+        <details class="missed-details">
+          <summary class="missed-summary">
+            <span>Missed Classes (0)</span>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </summary>
+          <div class="missed-group-empty" style="margin-top: 6px;">
+            🎉 100% Perfect Attendance! No classes missed.
+          </div>
+        </details>
+      `;
+    }
+    return '';
+  }
+
+  const theoryMissed = missed.filter(l => !isLabItem(l));
+  const labMissed = missed.filter(l => isLabItem(l));
+
+  const hasLabUnit = (subject.units || []).some(u => isLabItem(u));
+  const hasTheoryUnit = (subject.units || []).some(u => !isLabItem(u));
+
+  const renderLectureItem = (l) => `
+    <li class="missed-item">
+      <span class="missed-date">${formatLectureDate(l.start)}</span>
+      <span class="missed-title" title="${escapeHtml(l.title)}">${escapeHtml(l.title)}</span>
+    </li>
+  `;
+
+  let contentHtml = '';
+
+  // If this subject combines both Theory and Lab components:
+  if (hasTheoryUnit && hasLabUnit) {
+    let theoryHtml = '';
+    if (theoryMissed.length > 0) {
+      theoryHtml = `
+        <div class="missed-group">
+          <div class="missed-group-header">
+            <span class="missed-group-title">
+              <svg class="missed-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              Theory Lectures
+            </span>
+            <span class="missed-group-count">${theoryMissed.length} missed</span>
+          </div>
+          <ul class="missed-list">
+            ${theoryMissed.map(l => renderLectureItem(l)).join('')}
+          </ul>
+        </div>
+      `;
+    } else {
+      theoryHtml = `
+        <div class="missed-group-empty">
+          <span>✨ Theory: 0 missed (All attended)</span>
+        </div>
+      `;
+    }
+
+    let labHtml = '';
+    if (labMissed.length > 0) {
+      labHtml = `
+        <div class="missed-group">
+          <div class="missed-group-header">
+            <span class="missed-group-title">
+              <svg class="missed-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 2v7.31L4.69 18.2A2 2 0 0 0 6.4 21h11.2a2 2 0 0 0 1.71-2.8L14 9.31V2"/>
+                <path d="M8.5 2h7M7 16h10"/>
+              </svg>
+              Lab / Practical
+            </span>
+            <span class="missed-group-count">${labMissed.length} missed</span>
+          </div>
+          <ul class="missed-list">
+            ${labMissed.map(l => renderLectureItem(l)).join('')}
+          </ul>
+        </div>
+      `;
+    } else {
+      labHtml = `
+        <div class="missed-group-empty">
+          <span>✨ Lab: 0 missed (All attended)</span>
+        </div>
+      `;
+    }
+
+    contentHtml = `
+      <div class="missed-groups-container">
+        ${theoryHtml}
+        <div class="missed-divider"></div>
+        ${labHtml}
+      </div>
+    `;
+  } else if (hasLabUnit) {
+    // Only Lab component exists
+    contentHtml = `
+      <div class="missed-groups-container">
+        <div class="missed-group">
+          <div class="missed-group-header">
+            <span class="missed-group-title">
+              <svg class="missed-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 2v7.31L4.69 18.2A2 2 0 0 0 6.4 21h11.2a2 2 0 0 0 1.71-2.8L14 9.31V2"/>
+                <path d="M8.5 2h7M7 16h10"/>
+              </svg>
+              Lab / Practical
+            </span>
+            <span class="missed-group-count">${labMissed.length} missed</span>
+          </div>
+          <ul class="missed-list">
+            ${labMissed.map(l => renderLectureItem(l)).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+  } else {
+    // Pure Theory component or single unit
+    if (theoryMissed.length > 0 && labMissed.length > 0) {
+      contentHtml = `
+        <div class="missed-groups-container">
+          <div class="missed-group">
+            <div class="missed-group-header">
+              <span class="missed-group-title">Theory Lectures</span>
+              <span class="missed-group-count">${theoryMissed.length} missed</span>
+            </div>
+            <ul class="missed-list">
+              ${theoryMissed.map(l => renderLectureItem(l)).join('')}
+            </ul>
+          </div>
+          <div class="missed-divider"></div>
+          <div class="missed-group">
+            <div class="missed-group-header">
+              <span class="missed-group-title">Lab / Practical</span>
+              <span class="missed-group-count">${labMissed.length} missed</span>
+            </div>
+            <ul class="missed-list">
+              ${labMissed.map(l => renderLectureItem(l)).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+    } else {
+      const isOnlyLab = labMissed.length > 0;
+      const targetList = isOnlyLab ? labMissed : theoryMissed;
+      contentHtml = `
+        <div class="missed-groups-container">
+          <div class="missed-group">
+            <div class="missed-group-header">
+              <span class="missed-group-title">${isOnlyLab ? 'Lab / Practical' : 'Theory Lectures'}</span>
+              <span class="missed-group-count">${targetList.length} missed</span>
+            </div>
+            <ul class="missed-list">
+              ${targetList.map(l => renderLectureItem(l)).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  return `
+    <details class="missed-details">
+      <summary class="missed-summary">
+        <span>Missed Classes (${missed.length})</span>
+        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </summary>
+      ${contentHtml}
+    </details>
+  `;
+}
+
 function renderAttendanceEmpty(customMessage = null, isExpired = false) {
   if (!attendanceContainer) return;
   const title = isExpired ? 'Portal Session Expired' : 'Portal Login Required';
@@ -933,44 +1132,7 @@ function renderAttendanceUI() {
     const pct = subject.percentage !== null ? Math.min(100, Math.max(0, subject.percentage * 100)) : 0;
     const targetTickLeft = Math.round(currentAttendanceTarget * 100);
 
-    const missed = subject.missedLectures || [];
-    let missedHtml = '';
-
-    if (missed.length > 0) {
-      missedHtml = `
-        <details class="missed-details">
-          <summary class="missed-summary">
-            <span>Missed Classes (${missed.length})</span>
-            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </summary>
-          <ul class="missed-list">
-            ${missed.map(l => `
-              <li class="missed-item">
-                <span class="missed-date">${formatLectureDate(l.start)}</span>
-                <span class="missed-tag">${escapeHtml(l.component || 'Class')}</span>
-                <span class="missed-title" title="${escapeHtml(l.title)}">${escapeHtml(l.title)}</span>
-              </li>
-            `).join('')}
-          </ul>
-        </details>
-      `;
-    } else if (subject.held > 0) {
-      missedHtml = `
-        <details class="missed-details">
-          <summary class="missed-summary">
-            <span>Missed Classes (0)</span>
-            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </summary>
-          <div style="padding: 6px 0; font-size: 11px; color: var(--success-color); font-weight: 600;">
-            🎉 100% Perfect Attendance! No classes missed.
-          </div>
-        </details>
-      `;
-    }
+    const missedHtml = buildMissedClassesHtml(subject);
 
     cardsHtml += `
       <div class="att-subject-card band-${tone}">
@@ -1050,10 +1212,10 @@ async function getPortalAuthCredentials() {
             });
             return { token: res.token, courseHash: res.courseHash || null };
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 2. Fallback to cached token in storage
   try {
@@ -1061,7 +1223,7 @@ async function getPortalAuthCredentials() {
     if (cached && cached.nst_auth_token) {
       return { token: cached.nst_auth_token, courseHash: cached.nst_portal_course_hash || null };
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return null;
 }
@@ -1071,7 +1233,7 @@ async function loadAttendanceData(forceSync = false) {
   let cached = null;
   try {
     cached = await chrome.storage.local.get(['nst_attendance_data', 'nst_attendance_target']);
-  } catch (e) {}
+  } catch (e) { }
 
   if (cached && cached.nst_attendance_target) {
     currentAttendanceTarget = cached.nst_attendance_target;

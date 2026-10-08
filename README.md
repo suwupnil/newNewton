@@ -86,6 +86,7 @@ Blocking tracking on a Next.js / React single-page application requires dual-lay
 
 ### C. Campus Mess Menu Subsystem (`src/popup.js`, `src/popup.html`, `src/popup.css`)
 
+- **Maintained by Garvit-png**: The weekly mess menu data is maintained upstream by [Garvit-png](https://github.com/Garvit-png).
 - **Weekly Upstream Sync**: Fetches the weekly menu JSON from GitHub raw (`https://raw.githubusercontent.com/suwupnil/newNewton/refs/heads/main/menu.json`).
 - **Monday Auto-Refresh**: Caches the menu locally in `chrome.storage.local`. Automatically detects when a new Monday has occurred or if 7 days have elapsed, triggering a background refresh while showing cached data instantly (0ms latency).
 - **Dish Classification (`isSecondaryItem`)**:
@@ -98,17 +99,23 @@ Blocking tracking on a Next.js / React single-page application requires dual-lay
 - **Offline & Bundled Fallback**: Includes a bundled `menu.json` so the menu displays reliably even without network access.
 - **Manual Force Refresh**: Header button with spinning animation to force-sync the latest menu anytime.
 
-### D. Attendance & Mystery Placeholders
-- **Attendance**: Coming soon module for automated LMS attendance sync, margin calculation, and bunk safety alerts.
-- **Mystery**: Secret module placeholder reserved for upcoming releases.
+### D. Attendance Subsystem (`src/attendance/`)
+- **Rollup Logic & Grouping**: Adapted and ported from [nst-attendance](https://github.com/yats0x7/nst-attendance) by yats0x7.
+- **Direct LMS API Integration**: Concurrently fetches unit performance and lecture details directly from the Newton LMS API using the student's portal auth token.
+- **Theory & Lab Rollups**: Groups lecture and practical sections into combined subjects with weighted attendance totals.
+- **Actionable Verdict Sentences**: Clear instructions on exact skip budgets and recovery streaks.
+- **Safety Target Switcher**: Real-time client-side switching between 75%, 80%, and 85% safety targets with progress bar ticks and native `<details>` missed lecture history.
+
+### E. Mystery Module Placeholder
+- Secret module placeholder reserved for upcoming releases.
 
 ---
 
 ## 4. Permissions & Manifest V3 Configuration
 
-- **`storage`**: Persists user settings (`themeMode`, `themeName`, `blockTelemetry`, `mess_menu_data`) via `chrome.storage.sync` and `chrome.storage.local`.
+- **`storage`**: Persists user settings (`themeMode`, `themeName`, `blockTelemetry`, `mess_menu_data`, `nst_attendance_data`) via `chrome.storage.sync` and `chrome.storage.local`.
 - **`declarativeNetRequest`**: Dynamically activates or deactivates network blocking rules without requiring broad webRequest blocking overhead.
-- **`activeTab` & `scripting`**: Dispatches real-time messages and fallback execution to the active Newton School tab.
+- **`activeTab` & `tabs` & `scripting`**: Dispatches real-time messages and fallback execution to the active Newton School tab.
 - **`host_permissions`**: Scoped strictly to `https://my.newtonschool.co/*`, `https://*.newtonschool.co/*`, and `https://raw.githubusercontent.com/*`.
 - **Content Scripts**:
   - `src/telemetry-blocker.js`: `"world": "MAIN"`, `"run_at": "document_start"`.
@@ -116,7 +123,14 @@ Blocking tracking on a Next.js / React single-page application requires dual-lay
 
 ---
 
-## 5. How to Load and Test in Google Chrome
+## 5. Credits & Acknowledgements
+
+- **Mess Menu**: Maintained by [Garvit-png](https://github.com/Garvit-png).
+- **Attendance Rollup Engine**: Logic and heuristics powered by [nst-attendance](https://github.com/yats0x7/nst-attendance) by [yats0x7](https://github.com/yats0x7).
+
+---
+
+## 6. How to Load and Test in Google Chrome
 
 1. Open **Google Chrome**.
 2. Navigate to `chrome://extensions/`.
@@ -127,5 +141,5 @@ Blocking tracking on a Next.js / React single-page application requires dual-lay
 7. Open the extension popup:
    - Toggle theme between **Light**, **Dark**, and **System**.
    - Toggle **Telemetry & Tracking** ON to block tracking and diagnostic uploads, or OFF to allow.
-8. Inspect Network and Console in Chrome DevTools:
-   - Notice requests to Clarity, Mixpanel, CleverTap, and `/api/v1/user/report/` are blocked without throwing any JavaScript runtime errors.
+   - Check the **Mess Menu** tab with Garvit-png's maintained menu data.
+   - Check the **Attendance** tab with live sync, skip calculators, and rollup metrics.

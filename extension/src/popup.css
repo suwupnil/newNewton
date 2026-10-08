@@ -32,6 +32,7 @@
 }
 
 /* Dark Mode Tokens for Extension Popup */
+html.theme-dark,
 body.theme-dark {
   --bg-primary: #16191d;
   --bg-secondary: #0b0c0e;
@@ -60,8 +61,41 @@ body.theme-dark {
   color-scheme: dark;
 }
 
-/* System Dark Mode Fallback */
+/* Explicit Light Mode Tokens */
+html.theme-light,
+body.theme-light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f7f9;
+  --bg-card: #ffffff;
+  --bg-hover: #edeff3;
+  --text-primary: #16191d;
+  --text-secondary: #5b6271;
+  --text-muted: #8c95a6;
+  --border-color: #e1e5ea;
+  --brand-primary: #0673f9;
+  --brand-hover: #005ed1;
+  --brand-light: #e5f1ff;
+  --segment-bg: #edeff3;
+  --segment-active-bg: #ffffff;
+  --segment-active-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  --success-color: #13b97c;
+  --success-light: rgba(19, 185, 124, 0.12);
+  --warning-color: #f59e0b;
+  --warning-light: rgba(245, 158, 11, 0.14);
+  --danger-color: #ef4444;
+  --danger-light: rgba(239, 68, 68, 0.12);
+  --purple-color: #8b5cf6;
+  --purple-light: rgba(139, 92, 246, 0.12);
+  --orange-color: #f97316;
+  --orange-light: rgba(249, 115, 22, 0.12);
+  color-scheme: light;
+}
+
+/* System Dark Mode (Automatic when system preference is dark, unless explicitly light) */
 @media (prefers-color-scheme: dark) {
+  :root:not(.theme-light),
+  html:not(.theme-light),
+  html.theme-system,
   body.theme-system {
     --bg-primary: #16191d;
     --bg-secondary: #0b0c0e;
@@ -97,6 +131,11 @@ body.theme-dark {
   padding: 0;
 }
 
+html {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 body {
   width: 380px;
   max-height: 590px;
@@ -108,7 +147,6 @@ body {
   user-select: none;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 body::-webkit-scrollbar {
@@ -153,6 +191,35 @@ body::-webkit-scrollbar-thumb {
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+
+.github-link:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+  transform: translateY(-1px);
+}
+
+.github-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .badge {
@@ -1253,22 +1320,95 @@ details.missed-details[open] .chevron-icon {
   transform: rotate(180deg);
 }
 
+.missed-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.missed-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.missed-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1px 2px;
+}
+
+.missed-group-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+
+.missed-group-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--text-muted);
+}
+
+.missed-group-count {
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--danger-color);
+  background-color: var(--danger-light);
+  padding: 1px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.1px;
+}
+
+.missed-group-count.count-zero {
+  color: var(--success-color);
+  background-color: var(--success-light);
+}
+
+.missed-divider {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 2px 0;
+}
+
+.missed-group-empty {
+  font-size: 11px;
+  color: var(--success-color);
+  font-weight: 600;
+  padding: 4px 6px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .missed-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 6px;
+  margin-top: 0;
   padding: 0;
 }
 
 .missed-item {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 11px;
-  padding: 4px 6px;
+  padding: 4px 7px;
   background-color: var(--bg-secondary);
   border-radius: 6px;
 }
@@ -1277,15 +1417,6 @@ details.missed-details[open] .chevron-icon {
   font-weight: 600;
   color: var(--text-secondary);
   white-space: nowrap;
-}
-
-.missed-tag {
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background-color: var(--bg-hover);
-  color: var(--text-muted);
 }
 
 .missed-title {
@@ -1356,6 +1487,7 @@ details.missed-details[open] .chevron-icon {
 }
 
 /* Attribution Footer */
+.mess-attribution,
 .attendance-attribution {
   text-align: center;
   font-size: 10.5px;
@@ -1364,6 +1496,7 @@ details.missed-details[open] .chevron-icon {
   line-height: 1.4;
 }
 
+.mess-attribution a,
 .attendance-attribution a {
   color: var(--brand-primary);
   text-decoration: underline;

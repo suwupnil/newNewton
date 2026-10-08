@@ -1,4 +1,15 @@
 .DS_Store
 *.DS_Store
-
-test.json
+Thumbs.db
+node_modules/
+functions/node_modules/
+functions/lib/
+typings/
+.env
+.env*.local
+*.local
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+.agents/
+skills-lock.json
