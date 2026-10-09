@@ -13,10 +13,15 @@
   "host_permissions": [
     "https://my.newtonschool.co/*",
     "https://*.newtonschool.co/*",
-    "https://raw.githubusercontent.com/*"
+    "https://raw.githubusercontent.com/*",
+    "https://firestore.googleapis.com/*",
+    "https://*.cloudfunctions.net/*",
+    "http://127.0.0.1:5001/*",
+    "http://127.0.0.1:8080/*"
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "src/background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "src/popup.html",

@@ -182,6 +182,26 @@
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      // Intercept quiz submission endpoints: POST /api/v1/course/h/{courseHash}/assessment/h/{assessmentHash}/questions/?auto_submit=...
+      const quizSubmitMatch = url.match(/\/api\/v1\/course\/h\/([^/]+)\/assessment\/h\/([^/]+)\/questions\//i);
+      if (quizSubmitMatch && init && init.method && init.method.toUpperCase() === 'POST') {
+        const courseHash = quizSubmitMatch[1];
+        const assessmentHash = quizSubmitMatch[2];
+        try {
+          let authToken = null;
+          const rawToken = localStorage.getItem('auth-token');
+          if (rawToken) {
+            authToken = rawToken.startsWith('"') ? JSON.parse(rawToken) : rawToken;
+          }
+          window.postMessage({
+            source: 'newton-enhancer-quiz-submitted',
+            courseHash,
+            assessmentHash,
+            authToken
+          }, '*');
+        } catch (e) {}
+      }
+
       return originalFetch(input, init);
     };
   }

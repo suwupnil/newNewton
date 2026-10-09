@@ -1,0 +1,105 @@
+name: Deploy & Release Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  # =========================================================================
+  # 1. FIREBASE BACKEND DEPLOYMENT (Functions & Firestore)
+  # =========================================================================
+  deploy-firebase:
+    name: Deploy Firebase (Functions & Firestore)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install Functions Dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Lint and Build TypeScript
+        working-directory: functions
+        run: |
+          npm run lint
+          npm run build
+
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only functions,firestore
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_NEWNEWTON }}
+
+  # =========================================================================
+  # 2. EXTENSION PACKAGING & GITHUB RELEASE (.crx & .zip)
+  # =========================================================================
+  build-and-release-extension:
+    name: Package Extension & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Extract Manifest Version
+        id: ext_version
+        run: |
+          VERSION=$(node -e "console.log(require('./extension/manifest.json').version)")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Detected version: v${VERSION}"
+
+      - name: Create ZIP Package
+        run: |
+          mkdir -p dist
+          cd extension
+          zip -r ../dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip . -x ".*" -x "__MACOSX"
+          cd ..
+
+      - name: Package CRX File
+        uses: cardinalby/webext-buildtools-pack-extension-dir-action@v1
+        with:
+          extensionDir: 'extension'
+          zipFilePath: 'dist/newNewton-v${{ steps.ext_version.outputs.version }}-unpacked.zip'
+          crxFilePath: 'dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx'
+          privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.ext_version.outputs.version }}"
+          name: "newNewton Release v${{ steps.ext_version.outputs.version }}"
+          body: |
+            ### 🚀 newNewton v${{ steps.ext_version.outputs.version }}
+            Automated production build generated from commit `${{ github.sha }}`.
+
+            #### 📦 Downloads:
+            - **`newNewton-v${{ steps.ext_version.outputs.version }}.crx`**: Pre-packaged Chrome extension.
+            - **`newNewton-v${{ steps.ext_version.outputs.version }}.zip`**: Unpacked extension directory for Developer Mode loading.
+
+            #### 🛠️ Installation:
+            1. Download the `.crx` or extract the `.zip`.
+            2. In Chrome, open `chrome://extensions/`.
+            3. Enable **Developer mode** in the top-right corner.
+            4. Drag & drop the `.crx` file onto the page, OR click **Load unpacked** and select the unzipped directory.
+          files: |
+            dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx
+            dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

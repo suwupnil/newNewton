@@ -138,17 +138,39 @@
     });
   }
 
-  // 5. Sync portal auth token for background attendance access
+  // 5. Sync portal auth token & UID for background attendance and quiz sync
   function syncPortalAuth() {
     try {
-      const raw = localStorage.getItem('auth-token');
-      if (raw) {
-        const token = raw.startsWith('"') ? JSON.parse(raw) : raw;
+      const rawToken = localStorage.getItem('auth-token');
+      if (rawToken) {
+        const token = rawToken.startsWith('"') ? JSON.parse(rawToken) : rawToken;
         const courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
+
+        // Try to obtain student UID from user object or local storage
+        let uid = null;
+        try {
+          const userRaw = localStorage.getItem('user') || localStorage.getItem('user-info') || localStorage.getItem('user_profile');
+          if (userRaw) {
+            const parsedUser = JSON.parse(userRaw);
+            uid = parsedUser.uid || parsedUser.id || parsedUser.username || null;
+          }
+        } catch (e) {}
+
         chrome.storage.local.set({
           nst_auth_token: token,
+          nst_portal_uid: uid,
           nst_portal_course_hash: courseHash,
           nst_portal_last_seen: Date.now()
+        }, () => {
+          // Notify background service worker to check if initial quiz sync is pending
+          if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({
+              action: 'PORTAL_AUTH_UPDATED',
+              token,
+              uid,
+              courseHash
+            });
+          }
         });
       }
     } catch (e) {}
@@ -174,11 +196,19 @@
     }
   });
 
-  if (document.documentElement) {
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-      subtree: false
-    });
-  }
+  // 6. Listen for quiz submission events intercepted from MAIN world
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.source === 'newton-enhancer-quiz-submitted') {
+      const { courseHash, assessmentHash, authToken } = event.data;
+      if (courseHash && assessmentHash) {
+        console.log(`[Newton Enhancer] Quiz submitted: ${assessmentHash} (Course: ${courseHash}). Requesting archival check...`);
+        chrome.runtime.sendMessage({
+          action: 'ARCHIVE_QUIZ',
+          courseHash,
+          assessmentHash,
+          authToken
+        });
+      }
+    }
+  });
 })();

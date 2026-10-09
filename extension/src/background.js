@@ -4,6 +4,12 @@
  * tracking pixels, and diagnostic uploads when enabled.
  */
 
+import {
+  handleQuizSubmissionArchival,
+  checkSolutionsInFirestore,
+  triggerInitialSyncCloudFunction
+} from './quiz-client.js';
+
 const RULE_ID_OFFSET = 1000;
 
 const TELEMETRY_FILTERS = [
@@ -86,13 +92,45 @@ async function syncTelemetryBlockingRules(shouldBlock) {
   }
 }
 
-// 1. Extension install / update: set initial defaults
-chrome.runtime.onInstalled.addListener(async () => {
+// Helper: Attempt initial historical sync if auth token is present and not yet synced
+async function checkAndTriggerInitialSync(force = false) {
+  const syncState = await chrome.storage.local.get(['quiz_history_synced_at', 'nst_auth_token', 'nst_portal_uid', 'nst_portal_course_hash']);
+  if (!force && syncState.quiz_history_synced_at) {
+    return { status: 'ALREADY_SYNCED', syncedAt: syncState.quiz_history_synced_at };
+  }
+
+  const token = syncState.nst_auth_token;
+  if (!token) {
+    console.log('[Newton Enhancer] Initial sync pending: waiting for student authentication token...');
+    return { status: 'PENDING_AUTH' };
+  }
+
+  try {
+    const res = await triggerInitialSyncCloudFunction(token, syncState.nst_portal_uid, syncState.nst_portal_course_hash);
+    await chrome.storage.local.set({
+      quiz_history_synced_at: Date.now(),
+      quiz_sync_summary: res.summary || null
+    });
+    console.log('[Newton Enhancer] Initial quiz archival sync complete:', res);
+    return res;
+  } catch (err) {
+    console.error('[Newton Enhancer] Initial quiz sync failed:', err);
+    return { status: 'FAILED', error: err.message };
+  }
+}
+
+// 1. Extension install / update: set initial defaults & flag first install
+chrome.runtime.onInstalled.addListener(async (details) => {
   const result = await chrome.storage.sync.get(['blockTelemetry']);
-  // Default to true (telemetry blocking enabled)
   const isBlocked = result.blockTelemetry !== undefined ? result.blockTelemetry : true;
   await chrome.storage.sync.set({ blockTelemetry: isBlocked });
   await syncTelemetryBlockingRules(isBlocked);
+
+  if (details.reason === 'install') {
+    console.log('[Newton Enhancer] Fresh installation detected. Initializing first-install sync pipeline...');
+    await chrome.storage.local.set({ is_first_install: true });
+    await checkAndTriggerInitialSync();
+  }
 });
 
 // 2. Extension / browser startup: ensure rules are synchronized
@@ -121,6 +159,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.sync.get(['blockTelemetry'], (result) => {
       const isBlocked = result.blockTelemetry !== undefined ? result.blockTelemetry : true;
       sendResponse({ blockTelemetry: isBlocked });
+    });
+    return true;
+  }
+  if (message.action === 'ARCHIVE_QUIZ') {
+    const { courseHash, assessmentHash, authToken } = message;
+    handleQuizSubmissionArchival(courseHash, assessmentHash, authToken)
+      .then((res) => {
+        sendResponse({ success: true, result: res });
+      })
+      .catch((err) => {
+        sendResponse({ success: false, error: err.message });
+      });
+    return true; // Keep channel open for async response
+  }
+  if (message.action === 'CHECK_QUIZ_SOLUTIONS') {
+    const { assessmentHash } = message;
+    checkSolutionsInFirestore(assessmentHash)
+      .then((res) => {
+        sendResponse({ success: true, result: res });
+      })
+      .catch((err) => {
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
+  }
+  if (message.action === 'PORTAL_AUTH_UPDATED') {
+    // When student visits LMS and auth token is freshly captured, trigger first sync if pending
+    checkAndTriggerInitialSync().then((res) => {
+      sendResponse({ success: true, result: res });
+    });
+    return true;
+  }
+  if (message.action === 'TRIGGER_INITIAL_SYNC') {
+    checkAndTriggerInitialSync(message.force || false).then((res) => {
+      sendResponse({ success: true, result: res });
     });
     return true;
   }
