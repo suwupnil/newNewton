@@ -76,7 +76,7 @@ jobs:
         run: |
           if [ -n "${{ secrets.CRX_PRIVATE_KEY }}" ]; then
             echo "${{ secrets.CRX_PRIVATE_KEY }}" > /tmp/key.pem
-            npx --yes crx3 -p /tmp/key.pem -o dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip
+            npx --yes crx3 -p /tmp/key.pem -o dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx extension
             rm -f /tmp/key.pem
             echo "Successfully generated signed CRX."
           else
