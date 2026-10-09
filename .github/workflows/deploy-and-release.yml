@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
           cache-dependency-path: functions/package-lock.json
 
@@ -56,7 +56,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Extract Manifest Version
         id: ext_version
@@ -72,13 +72,16 @@ jobs:
           zip -r ../dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip . -x ".*" -x "__MACOSX"
           cd ..
 
-      - name: Package CRX File
-        uses: cardinalby/webext-buildtools-pack-extension-dir-action@v1
-        with:
-          extensionDir: 'extension'
-          zipFilePath: 'dist/newNewton-v${{ steps.ext_version.outputs.version }}-unpacked.zip'
-          crxFilePath: 'dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx'
-          privateKey: ${{ secrets.CRX_PRIVATE_KEY }}
+      - name: Build Signed CRX File
+        run: |
+          if [ -n "${{ secrets.CRX_PRIVATE_KEY }}" ]; then
+            echo "${{ secrets.CRX_PRIVATE_KEY }}" > /tmp/key.pem
+            npx --yes crx3 -p /tmp/key.pem -o dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip
+            rm -f /tmp/key.pem
+            echo "Successfully generated signed CRX."
+          else
+            echo "Notice: CRX_PRIVATE_KEY secret is not set. Skipping .crx generation."
+          fi
 
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
@@ -99,7 +102,7 @@ jobs:
             3. Enable **Developer mode** in the top-right corner.
             4. Drag & drop the `.crx` file onto the page, OR click **Load unpacked** and select the unzipped directory.
           files: |
-            dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx
             dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip
+            dist/newNewton-v*.crx
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
