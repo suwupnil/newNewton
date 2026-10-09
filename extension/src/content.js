@@ -143,8 +143,15 @@
     try {
       const rawToken = localStorage.getItem('auth-token');
       if (rawToken) {
-        const token = rawToken.startsWith('"') ? JSON.parse(rawToken) : rawToken;
-        const courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
+        let courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
+        if (!courseHash) {
+          try {
+            const storedCourse = localStorage.getItem('current_course') || localStorage.getItem('active_course') || localStorage.getItem('active_course_hash');
+            if (storedCourse) {
+              courseHash = storedCourse.startsWith('{') ? JSON.parse(storedCourse).hash : storedCourse;
+            }
+          } catch (e) {}
+        }
 
         // Try to obtain student UID from user object or local storage
         let uid = null;
