@@ -1343,3 +1343,57 @@ btnSyncAttendance?.addEventListener('click', () => {
 initMessMenu();
 initAttendance();
 
+// ========================================================
+// 5. QUIZ ARCHIVER (MYSTERY TAB) SYNC CONTROLLER
+// ========================================================
+
+const quizSyncStatusText = document.getElementById('quizSyncStatusText');
+const btnManualQuizSync = document.getElementById('btnManualQuizSync');
+
+async function updateQuizSyncStatusUI() {
+  if (!quizSyncStatusText) return;
+  const storage = await chrome.storage.local.get(['quiz_history_synced_at', 'quiz_sync_summary', 'nst_auth_token']);
+  
+  if (!storage.nst_auth_token) {
+    quizSyncStatusText.innerHTML = '⚠️ <span style="color:#f59e0b;">Waiting for LMS login</span><br><small>Open my.newtonschool.co once to authenticate.</small>';
+    return;
+  }
+
+  if (storage.quiz_history_synced_at) {
+    const dateStr = new Date(storage.quiz_history_synced_at).toLocaleDateString([], {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const sum = storage.quiz_sync_summary;
+    const summaryText = sum ? `(${sum.newlyArchived || 0} archived, ${sum.alreadyExisted || 0} cached)` : '';
+    quizSyncStatusText.innerHTML = `✅ <b>Synced</b> ${dateStr}<br><small>${summaryText}</small>`;
+  } else {
+    quizSyncStatusText.innerHTML = '⚡ <b>Ready to sync</b><br><small>Click below to archive all submitted quizzes.</small>';
+  }
+}
+
+btnManualQuizSync?.addEventListener('click', async () => {
+  if (!btnManualQuizSync || !quizSyncStatusText) return;
+  btnManualQuizSync.disabled = true;
+  quizSyncStatusText.textContent = '⏳ Querying Newton LMS & archiving to Firestore...';
+
+  try {
+    chrome.runtime.sendMessage({ action: 'TRIGGER_INITIAL_SYNC', force: true }, (response) => {
+      btnManualQuizSync.disabled = false;
+      if (response && response.result && response.result.summary) {
+        const s = response.result.summary;
+        showStatus(`Archived ${s.newlyArchived} quizzes (${s.alreadyExisted} existed)`);
+      } else if (response && response.result && response.result.status === 'PENDING_AUTH') {
+        showStatus('Please log into Newton School portal first', false);
+      } else {
+        showStatus('Sync finished');
+      }
+      updateQuizSyncStatusUI();
+    });
+  } catch (e) {
+    btnManualQuizSync.disabled = false;
+    quizSyncStatusText.textContent = `❌ Sync failed: ${e.message}`;
+  }
+});
+
+updateQuizSyncStatusUI();
+

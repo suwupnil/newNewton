@@ -243,32 +243,54 @@ export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds
   try {
     // 1. Resolve Admin Course Hash if not provided
     if (!preferredCourseHash) {
+      logger.info("[initialSyncSubmittedQuizzes] No courseHash provided in request. Discovering via applied courses API...");
       const appliedResp = await fetch("https://my.newtonschool.co/api/v2/course/all/applied/?pagination=false&completed=false", {
         headers: {
           "Authorization": `Bearer ${cleanToken}`,
           "Accept": "application/json",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
         },
       });
 
-      if (appliedResp.ok) {
-        const programs = await appliedResp.json();
-        if (Array.isArray(programs)) {
-          for (const prog of programs) {
-            const adminCourses = prog?.children_courses?.admin_unit_courses || [];
-            const active = adminCourses.find((c: any) => c.is_active_admin_unit_course) || adminCourses[0];
-            if (active?.hash) {
-              preferredCourseHash = active.hash;
-              break;
-            }
+      if (!appliedResp.ok) {
+        const errBody = await appliedResp.text();
+        logger.error(`[initialSyncSubmittedQuizzes] Applied courses API failed HTTP ${appliedResp.status}: ${errBody}`);
+        res.status(appliedResp.status).json({
+          error: `Newton LMS applied courses API failed HTTP ${appliedResp.status}`,
+          details: errBody,
+        });
+        return;
+      }
+
+      const programs = await appliedResp.json();
+      logger.info(`[initialSyncSubmittedQuizzes] Applied courses response count: ${Array.isArray(programs) ? programs.length : 0}`);
+
+      if (Array.isArray(programs)) {
+        for (const prog of programs) {
+          const adminCourses = prog?.children_courses?.admin_unit_courses || [];
+          const active = adminCourses.find((c: any) => c.is_active_admin_unit_course) || adminCourses[0];
+          if (active?.hash) {
+            preferredCourseHash = active.hash;
+            logger.info(`[initialSyncSubmittedQuizzes] Selected active semester: ${active.title || "Untitled"} (${preferredCourseHash})`);
+            break;
+          }
+          // If no admin_unit_courses, check direct program hash
+          if (prog?.hash) {
+            preferredCourseHash = prog.hash;
+            logger.info(`[initialSyncSubmittedQuizzes] Fallback to program hash: ${prog.title || "Program"} (${preferredCourseHash})`);
+            break;
           }
         }
       }
     }
 
     if (!preferredCourseHash) {
+      logger.error("[initialSyncSubmittedQuizzes] Unable to detect active semester course hash from LMS.");
       res.status(404).json({error: "Unable to detect active semester course hash."});
       return;
     }
+
+    logger.info(`[initialSyncSubmittedQuizzes] Querying assessments for course: ${preferredCourseHash}...`);
 
     // 2. Fetch completed assessments (attempt_statuses=3 = Completed)
     // Section 2.1 & 2.2 of NEWTON_QUIZ_API_SPECIFICATION.md

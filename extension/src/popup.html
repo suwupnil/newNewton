@@ -275,7 +275,7 @@
         </div>
       </div>
 
-      <!-- 4. Mystery Tab Pane (Placeholder) -->
+      <!-- 4. Mystery Tab Pane: Quiz Archiver -->
       <div class="tab-pane" id="tabMystery" role="tabpanel" aria-labelledby="navBtnMystery">
         <div class="card placeholder-card mystery-card">
           <div class="placeholder-icon-wrapper mystery-glow">
@@ -284,15 +284,17 @@
               <path d="M5 3v4M3 5h4M19 17v4M17 19h4"/>
             </svg>
           </div>
-          <span class="placeholder-badge mystery-badge">Classified</span>
-          <h3 class="placeholder-title">Mystery Module</h3>
+          <span class="placeholder-badge mystery-badge">Live System</span>
+          <h3 class="placeholder-title">Quiz Solutions Archiver</h3>
           <p class="placeholder-desc">
-            A secret module is under active construction. Stay tuned for updates!
+            Automatically archives solutions to Cloud Firestore when quizzes are submitted, and syncs past assessments.
           </p>
 
-          <div class="mystery-box">
-            <span class="mystery-lock-icon">🔒</span>
-            <span class="mystery-text">Secret feature arriving soon</span>
+          <div id="quizSyncStatusBox" class="mystery-box" style="display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center;">
+            <div id="quizSyncStatusText" style="font-size: 12px; opacity: 0.85;">Checking sync status...</div>
+            <button type="button" id="btnManualQuizSync" class="btn btn-secondary" style="margin-top: 4px; padding: 6px 14px; font-size: 12px; cursor: pointer; border-radius: 6px;">
+              🔄 Sync Past Quizzes Now
+            </button>
           </div>
         </div>
       </div>

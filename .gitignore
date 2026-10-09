@@ -13,3 +13,6 @@ firestore-debug.log*
 ui-debug.log*
 .agents/
 skills-lock.json
+.firebase/
+*.json.key
+*-service-account*.json
