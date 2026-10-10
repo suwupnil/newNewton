@@ -164,7 +164,7 @@
       } else if (request.action === 'GET_PORTAL_AUTH') {
         let token = null;
         try {
-          const raw = localStorage.getItem('auth-token');
+          const raw = getRawPortalToken();
           token = extractCleanAuthToken(raw);
         } catch (e) {}
         const courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
@@ -174,10 +174,30 @@
     });
   }
 
-  // 5. Sync portal auth token & UID for background attendance and quiz sync
+  // 5. Helper to retrieve raw auth token across storage keys and cookies
+  function getRawPortalToken() {
+    try {
+      const candidates = [
+        localStorage.getItem('auth-token'),
+        localStorage.getItem('token'),
+        localStorage.getItem('access_token'),
+        localStorage.getItem('authToken'),
+        sessionStorage.getItem('auth-token'),
+        sessionStorage.getItem('token')
+      ];
+      for (const c of candidates) {
+        if (c) return c;
+      }
+      const match = document.cookie.match(/(?:^|;\s*)access_token_ns_student_web=([^;]+)/);
+      if (match) return decodeURIComponent(match[1]);
+    } catch (e) {}
+    return null;
+  }
+
+  // Sync portal auth token & UID for background attendance and quiz sync
   function syncPortalAuth() {
     try {
-      const rawToken = localStorage.getItem('auth-token');
+      const rawToken = getRawPortalToken();
       if (rawToken) {
         let courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
         if (!courseHash) {
@@ -221,6 +241,8 @@
     } catch (e) {}
   }
   syncPortalAuth();
+  document.addEventListener('DOMContentLoaded', syncPortalAuth);
+  window.addEventListener('load', syncPortalAuth);
 
   // 5. Observer to ensure Next.js route transitions or re-renders do not strip the theme class
   const observer = new MutationObserver(() => {

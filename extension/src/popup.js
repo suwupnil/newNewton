@@ -24,6 +24,7 @@
 
 import { fetchFullAttendanceData } from './attendance/portal-api.js';
 import { summarize, combine, DEFAULT_TARGET } from './attendance/math.js';
+import { testLMSAuthToken } from './quiz-client.js';
 
 // ========================================================
 // 1. CONSTANTS & DEFINITIONS
@@ -1344,16 +1345,102 @@ initMessMenu();
 initAttendance();
 
 // ========================================================
-// 5. QUIZ ARCHIVER (MYSTERY TAB) SYNC CONTROLLER
+// 5. QUIZ ARCHIVER & LMS TOKEN DIAGNOSTICS (MYSTERY TAB)
 // ========================================================
 
+const tokenStatusBadge = document.getElementById('tokenStatusBadge');
+const tokenDiagnosticDetails = document.getElementById('tokenDiagnosticDetails');
+const btnTestLmsAuth = document.getElementById('btnTestLmsAuth');
 const quizSyncStatusText = document.getElementById('quizSyncStatusText');
 const btnManualQuizSync = document.getElementById('btnManualQuizSync');
+
+async function runLmsTokenDiagnostics() {
+  if (tokenStatusBadge) {
+    tokenStatusBadge.textContent = 'Testing...';
+    tokenStatusBadge.style.backgroundColor = '';
+  }
+  if (tokenDiagnosticDetails) tokenDiagnosticDetails.textContent = 'Verifying Newton LMS credentials...';
+  if (btnTestLmsAuth) btnTestLmsAuth.disabled = true;
+
+  try {
+    const creds = await getPortalAuthCredentials();
+    const token = creds?.token;
+
+    if (!token) {
+      if (tokenStatusBadge) {
+        tokenStatusBadge.textContent = 'Missing';
+        tokenStatusBadge.style.backgroundColor = '#f59e0b';
+        tokenStatusBadge.style.color = '#fff';
+      }
+      if (tokenDiagnosticDetails) {
+        tokenDiagnosticDetails.innerHTML = '⚠️ <b>No token found in browser storage or cookies.</b><br>Please open <a href="https://my.newtonschool.co" target="_blank" style="color:var(--brand-primary); text-decoration:underline;">my.newtonschool.co</a> in a tab and log in.';
+      }
+      return null;
+    }
+
+    const testRes = await testLMSAuthToken(token);
+
+    if (testRes.valid) {
+      if (tokenStatusBadge) {
+        tokenStatusBadge.textContent = 'Connected (200)';
+        tokenStatusBadge.style.backgroundColor = '#10b981';
+        tokenStatusBadge.style.color = '#fff';
+      }
+      const courseTitle = testRes.activeCourse ? testRes.activeCourse.title : 'Active Semester';
+      if (tokenDiagnosticDetails) {
+        tokenDiagnosticDetails.innerHTML = `🟢 <b>Token Valid!</b> [${testRes.tokenPreview}]<br>Course: <b>${courseTitle}</b> (${testRes.enrolledCount} enrolled program(s)).`;
+      }
+    } else if (testRes.statusCode === 401) {
+      if (tokenStatusBadge) {
+        tokenStatusBadge.textContent = 'Expired (401)';
+        tokenStatusBadge.style.backgroundColor = '#ef4444';
+        tokenStatusBadge.style.color = '#fff';
+      }
+      if (tokenDiagnosticDetails) {
+        tokenDiagnosticDetails.innerHTML = '🔴 <b>Session Expired.</b> LMS rejected your token with 401 Unauthorized.<br>Please open <a href="https://my.newtonschool.co" target="_blank" style="color:var(--brand-primary); text-decoration:underline;">my.newtonschool.co</a> and log in again.';
+      }
+    } else if (testRes.statusCode === 403) {
+      if (tokenStatusBadge) {
+        tokenStatusBadge.textContent = 'Forbidden (403)';
+        tokenStatusBadge.style.backgroundColor = '#ef4444';
+        tokenStatusBadge.style.color = '#fff';
+      }
+      if (tokenDiagnosticDetails) {
+        tokenDiagnosticDetails.innerHTML = '🔴 <b>HTTP 403 Forbidden.</b> Newton LMS rejected session access.<br>Try refreshing your tab on my.newtonschool.co.';
+      }
+    } else {
+      if (tokenStatusBadge) {
+        tokenStatusBadge.textContent = 'Error';
+        tokenStatusBadge.style.backgroundColor = '#f59e0b';
+        tokenStatusBadge.style.color = '#fff';
+      }
+      if (tokenDiagnosticDetails) {
+        tokenDiagnosticDetails.innerHTML = `⚠️ ${testRes.message}`;
+      }
+    }
+
+    return testRes;
+  } catch (err) {
+    if (tokenStatusBadge) {
+      tokenStatusBadge.textContent = 'Failed';
+      tokenStatusBadge.style.backgroundColor = '#ef4444';
+      tokenStatusBadge.style.color = '#fff';
+    }
+    if (tokenDiagnosticDetails) {
+      tokenDiagnosticDetails.innerHTML = `⚠️ Diagnostic error: ${err.message}`;
+    }
+    return null;
+  } finally {
+    if (btnTestLmsAuth) btnTestLmsAuth.disabled = false;
+  }
+}
+
+btnTestLmsAuth?.addEventListener('click', runLmsTokenDiagnostics);
 
 async function updateQuizSyncStatusUI() {
   if (!quizSyncStatusText) return;
   const storage = await chrome.storage.local.get(['quiz_history_synced_at', 'quiz_sync_summary', 'nst_auth_token']);
-  
+
   if (!storage.nst_auth_token) {
     quizSyncStatusText.innerHTML = '⚠️ <span style="color:#f59e0b;">Waiting for LMS login</span><br><small>Open my.newtonschool.co once to authenticate.</small>';
     return;
@@ -1367,23 +1454,27 @@ async function updateQuizSyncStatusUI() {
     const summaryText = sum ? `(${sum.newlyArchived || 0} archived, ${sum.alreadyExisted || 0} cached)` : '';
     quizSyncStatusText.innerHTML = `✅ <b>Synced</b> ${dateStr}<br><small>${summaryText}</small>`;
   } else {
-    quizSyncStatusText.innerHTML = '⚡ <b>Ready to sync</b><br><small>Click below to archive all submitted quizzes.</small>';
+    quizSyncStatusText.innerHTML = '⚡ <b>Ready to sync</b><br><small>Click below to archive all submitted quizzes directly to Firestore.</small>';
   }
 }
 
 btnManualQuizSync?.addEventListener('click', async () => {
   if (!btnManualQuizSync || !quizSyncStatusText) return;
   btnManualQuizSync.disabled = true;
-  quizSyncStatusText.textContent = '⏳ Querying Newton LMS & archiving to Firestore...';
+  quizSyncStatusText.innerHTML = '⏳ <b>Syncing quizzes...</b><br><small>Extracting past assessments from LMS & archiving into Firestore...</small>';
 
   try {
     chrome.runtime.sendMessage({ action: 'TRIGGER_INITIAL_SYNC', force: true }, (response) => {
       btnManualQuizSync.disabled = false;
       if (response && response.result && response.result.summary) {
         const s = response.result.summary;
-        showStatus(`Archived ${s.newlyArchived} quizzes (${s.alreadyExisted} existed)`);
+        quizSyncStatusText.innerHTML = `✅ <b>Sync Completed!</b><br><small>${s.newlyArchived} newly archived, ${s.alreadyExisted} already in Firestore.</small>`;
+        showStatus(`Archived ${s.newlyArchived} quizzes into Firestore!`);
       } else if (response && response.result && response.result.status === 'PENDING_AUTH') {
+        quizSyncStatusText.innerHTML = '⚠️ <b>Authentication needed.</b><br><small>Open my.newtonschool.co first to acquire token.</small>';
         showStatus('Please log into Newton School portal first', false);
+      } else if (response && response.result && response.result.error) {
+        quizSyncStatusText.innerHTML = `❌ <b>Sync Failed:</b><br><small>${response.result.error}</small>`;
       } else {
         showStatus('Sync finished');
       }
@@ -1391,9 +1482,11 @@ btnManualQuizSync?.addEventListener('click', async () => {
     });
   } catch (e) {
     btnManualQuizSync.disabled = false;
-    quizSyncStatusText.textContent = `❌ Sync failed: ${e.message}`;
+    quizSyncStatusText.innerHTML = `❌ Sync error: ${e.message}`;
   }
 });
 
 updateQuizSyncStatusUI();
+// Run a silent initial check for token
+runLmsTokenDiagnostics();
 

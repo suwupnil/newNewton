@@ -7,7 +7,8 @@
 import {
   handleQuizSubmissionArchival,
   checkSolutionsInFirestore,
-  triggerInitialSyncCloudFunction
+  syncHistoricalQuizzes,
+  extractCleanAuthToken
 } from './quiz-client.js';
 
 const RULE_ID_OFFSET = 1000;
@@ -99,35 +100,31 @@ async function checkAndTriggerInitialSync(force = false) {
     return { status: 'ALREADY_SYNCED', syncedAt: syncState.quiz_history_synced_at };
   }
 
-  const token = syncState.nst_auth_token;
+  let token = syncState.nst_auth_token;
+
+  // If no token in storage, check cookies if available
+  if (!token && typeof chrome !== 'undefined' && chrome.cookies) {
+    try {
+      const cookie = await chrome.cookies.get({
+        url: 'https://my.newtonschool.co',
+        name: 'access_token_ns_student_web'
+      });
+      if (cookie && cookie.value) {
+        token = extractCleanAuthToken(cookie.value);
+        if (token) {
+          await chrome.storage.local.set({ nst_auth_token: token });
+        }
+      }
+    } catch (e) {}
+  }
+
   if (!token) {
     console.log('[Newton Enhancer] Initial sync pending: waiting for student authentication token...');
     return { status: 'PENDING_AUTH' };
   }
 
-  let courseHash = syncState.nst_portal_course_hash;
-
-  // If no courseHash in storage, resolve it on client using the student's browser session (avoid Cloud Function 403)
-  if (!courseHash) {
-    try {
-      const { resolveActiveSemester } = await import('./attendance/portal-api.js');
-      const resolved = await resolveActiveSemester(token);
-      if (resolved && resolved.semesterHash) {
-        courseHash = resolved.semesterHash;
-        await chrome.storage.local.set({ nst_portal_course_hash: courseHash });
-        console.log(`[Newton Enhancer] Resolved active semester on client: ${resolved.semesterTitle} (${courseHash})`);
-      }
-    } catch (e) {
-      console.warn('[Newton Enhancer] Could not resolve semester locally, letting Cloud Function try:', e);
-    }
-  }
-
   try {
-    const res = await triggerInitialSyncCloudFunction(token, syncState.nst_portal_uid, courseHash);
-    await chrome.storage.local.set({
-      quiz_history_synced_at: Date.now(),
-      quiz_sync_summary: res.summary || null
-    });
+    const res = await syncHistoricalQuizzes(token, syncState.nst_portal_uid, syncState.nst_portal_course_hash);
     console.log('[Newton Enhancer] Initial quiz archival sync complete:', res);
     return res;
   } catch (err) {

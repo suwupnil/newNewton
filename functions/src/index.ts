@@ -15,13 +15,28 @@ setGlobalOptions({
 interface ArchiveQuizRequest {
   courseHash: string;
   assessmentHash: string;
-  authToken: string;
+  authToken?: string;
+  title?: string;
+  quizTitle?: string;
+  questions?: NormalizedQuestion[] | any[];
+  hasAnswersRevealed?: boolean;
+}
+
+interface QuizDocumentPayload {
+  assessmentHash: string;
+  courseHash: string;
+  title?: string | null;
+  quizTitle?: string | null;
+  totalQuestions?: number;
+  hasAnswersRevealed?: boolean;
+  questions: NormalizedQuestion[] | any[];
 }
 
 interface InitialSyncRequest {
   uid?: string;
-  authToken: string;
+  authToken?: string;
   courseHash?: string;
+  quizzes?: QuizDocumentPayload[];
 }
 
 interface NormalizedOption {
@@ -198,6 +213,7 @@ async function fetchAndArchiveQuiz(
  *
  * Receives { courseHash, assessmentHash, authToken }
  * Called immediately upon a quiz submission event.
+ * Supports direct questions payload from client, or fetching via authToken.
  */
 export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
   if (req.method !== "POST") {
@@ -208,14 +224,58 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
   const body = req.body as Partial<ArchiveQuizRequest>;
   const {courseHash, assessmentHash, authToken} = body;
 
-  if (!courseHash || !assessmentHash || !authToken) {
+  if (!courseHash || !assessmentHash) {
     res.status(400).json({
-      error: "Missing required fields: courseHash, assessmentHash, and authToken are required.",
+      error: "Missing required fields: courseHash and assessmentHash are required.",
     });
     return;
   }
 
   try {
+    // 1. Direct client ingestion: If client provided questions, save directly to Firestore
+    if (Array.isArray(body.questions) && body.questions.length > 0) {
+      const docRef = db.collection("quizzes").doc(assessmentHash);
+      const existingDoc = await docRef.get();
+
+      const normalized = (body.questions[0]?.multiple_choice_question || body.questions[0]?.choice_A_text) ?
+        normalizeNewtonQuestions(body.questions) :
+        body.questions;
+
+      const hasSolutions = body.hasAnswersRevealed ?? normalized.some(
+        (q: any) => q.correctChoice !== null || q.correctExplanation !== null
+      );
+
+      const docPayload = {
+        assessmentHash,
+        courseHash,
+        title: body.title || body.quizTitle || (existingDoc.exists ? existingDoc.data()?.title : null) || null,
+        totalQuestions: normalized.length,
+        hasAnswersRevealed: hasSolutions,
+        questions: normalized,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: existingDoc.exists ?
+          (existingDoc.data()?.createdAt || admin.firestore.FieldValue.serverTimestamp()) :
+          admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(docPayload, {merge: true});
+      logger.info(`[archiveQuizSolution] Directly saved solutions for ${assessmentHash} (Course: ${courseHash})`);
+      res.status(200).json({
+        status: "SAVED",
+        message: "Quiz solutions archived successfully.",
+        assessmentHash,
+      });
+      return;
+    }
+
+    // 2. Fallback: Fetch from LMS if authToken is provided
+    if (!authToken) {
+      res.status(400).json({
+        error: "Missing required fields: questions array or authToken is required.",
+      });
+      return;
+    }
+
     const cleanToken = extractCleanAuthToken(authToken);
     const result = await fetchAndArchiveQuiz(courseHash, assessmentHash, cleanToken);
 
@@ -250,13 +310,88 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
 });
 
 /**
+ * Cloud Function: batchSaveQuizzes
+ *
+ * Ingestion API for client-extracted quiz batches.
+ * Accepts { quizzes: QuizDocumentPayload[], uid?: string }
+ */
+export const batchSaveQuizzes = onRequest({cors: true, timeoutSeconds: 120}, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({error: "Method Not Allowed. Use POST."});
+    return;
+  }
+
+  const {quizzes, uid} = req.body;
+  if (!Array.isArray(quizzes) || quizzes.length === 0) {
+    res.status(400).json({error: "quizzes array is required and must not be empty."});
+    return;
+  }
+
+  try {
+    let savedCount = 0;
+    const CHUNK_SIZE = 400;
+
+    for (let i = 0; i < quizzes.length; i += CHUNK_SIZE) {
+      const chunk = quizzes.slice(i, i + CHUNK_SIZE);
+      const batch = db.batch();
+
+      for (const item of chunk) {
+        if (!item.assessmentHash || !item.courseHash || !Array.isArray(item.questions)) {
+          continue;
+        }
+
+        const normalized = (item.questions[0]?.multiple_choice_question || item.questions[0]?.choice_A_text) ?
+          normalizeNewtonQuestions(item.questions) :
+          item.questions;
+
+        const hasSolutions = item.hasAnswersRevealed ?? normalized.some(
+          (q: any) => q.correctChoice !== null || q.correctExplanation !== null
+        );
+
+        const docRef = db.collection("quizzes").doc(item.assessmentHash);
+        const payload = {
+          assessmentHash: item.assessmentHash,
+          courseHash: item.courseHash,
+          title: item.title || item.quizTitle || null,
+          totalQuestions: normalized.length,
+          hasAnswersRevealed: hasSolutions,
+          questions: normalized,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        batch.set(docRef, payload, {merge: true});
+        savedCount++;
+      }
+
+      await batch.commit();
+    }
+
+    if (uid) {
+      await db.collection("sync_history").doc(uid).set({
+        uid,
+        lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+        totalArchived: savedCount,
+      }, {merge: true});
+    }
+
+    logger.info(`[batchSaveQuizzes] Successfully archived ${savedCount} quizzes (UID: ${uid || "anonymous"}).`);
+    res.status(200).json({
+      status: "SUCCESS",
+      savedCount,
+      message: `Successfully archived ${savedCount} quizzes in Firestore.`,
+    });
+  } catch (error: any) {
+    logger.error("[batchSaveQuizzes] Batch write error:", error);
+    res.status(500).json({error: "Failed to batch save quizzes", details: error.message});
+  }
+});
+
+/**
  * Cloud Function: initialSyncSubmittedQuizzes
  *
- * Triggered on the very first install/launch of the extension:
- * Receives { uid, authToken, courseHash? }
- * 1. Fetches all submitted assessments for the student's active semester/courses
- * 2. Checks Firestore for each assessment
- * 3. Archives missing quiz solutions into Firestore
+ * Triggered on initial sync of past assessments:
+ * 1. If quizzes array provided by extension: saves directly via batch!
+ * 2. If authToken provided: attempts fallback discovery (may be blocked by LMS datacenter IP filtering).
  */
 export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds: 300}, async (req, res) => {
   if (req.method !== "POST") {
@@ -265,11 +400,74 @@ export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds
   }
 
   const body = req.body as Partial<InitialSyncRequest>;
-  const {uid, authToken} = body;
+  const {uid, authToken, quizzes} = body;
   let preferredCourseHash = body.courseHash;
 
+  // 1. Direct batch ingestion if client has already fetched quizzes
+  if (Array.isArray(quizzes) && quizzes.length > 0) {
+    try {
+      let savedCount = 0;
+      const CHUNK_SIZE = 400;
+
+      for (let i = 0; i < quizzes.length; i += CHUNK_SIZE) {
+        const chunk = quizzes.slice(i, i + CHUNK_SIZE);
+        const batch = db.batch();
+
+        for (const item of chunk) {
+          if (!item.assessmentHash || !item.courseHash || !Array.isArray(item.questions)) {
+            continue;
+          }
+
+          const normalized = (item.questions[0]?.multiple_choice_question || item.questions[0]?.choice_A_text) ?
+            normalizeNewtonQuestions(item.questions) :
+            item.questions;
+
+          const hasSolutions = item.hasAnswersRevealed ?? normalized.some(
+            (q: any) => q.correctChoice !== null || q.correctExplanation !== null
+          );
+
+          const docRef = db.collection("quizzes").doc(item.assessmentHash);
+          batch.set(docRef, {
+            assessmentHash: item.assessmentHash,
+            courseHash: item.courseHash,
+            title: item.title || item.quizTitle || null,
+            totalQuestions: normalized.length,
+            hasAnswersRevealed: hasSolutions,
+            questions: normalized,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, {merge: true});
+          savedCount++;
+        }
+
+        await batch.commit();
+      }
+
+      if (uid) {
+        await db.collection("sync_history").doc(uid).set({
+          uid,
+          lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+          summary: {totalFound: quizzes.length, newlyArchived: savedCount, alreadyExisted: 0, failed: 0},
+        }, {merge: true});
+      }
+
+      logger.info(`[initialSyncSubmittedQuizzes] Batch saved ${savedCount} quizzes from client.`);
+      res.status(200).json({
+        status: "SUCCESS",
+        message: `Successfully archived ${savedCount} quizzes in Firestore.`,
+        summary: {totalFound: quizzes.length, newlyArchived: savedCount, alreadyExisted: 0, failed: 0},
+      });
+      return;
+    } catch (err: any) {
+      logger.error("[initialSyncSubmittedQuizzes] Batch saving error:", err);
+      res.status(500).json({error: "Failed to batch save quizzes", details: err.message});
+      return;
+    }
+  }
+
+  // 2. Fallback: Server-side discovery
   if (!authToken) {
-    res.status(400).json({error: "authToken is required for initial sync."});
+    res.status(400).json({error: "Either quizzes array or authToken is required for initial sync."});
     return;
   }
 

@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "newNewton",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "UX Enhancer for Newton School - Native Grauity Theme Switcher and Telemetry Blocker",
   "permissions": [
     "storage",
     "activeTab",
     "tabs",
     "scripting",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "cookies"
   ],
   "host_permissions": [
     "https://my.newtonschool.co/*",
