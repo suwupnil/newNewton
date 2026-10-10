@@ -18,6 +18,26 @@
     return mode;
   }
 
+  function extractCleanAuthToken(raw) {
+    if (!raw) return null;
+    let parsed = raw;
+    if (typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {}
+    }
+    let tokenStr = null;
+    if (typeof parsed === 'string') {
+      tokenStr = parsed;
+    } else if (typeof parsed === 'object' && parsed !== null) {
+      tokenStr = parsed.token || parsed.access_token || null;
+    }
+    if (typeof tokenStr === 'string') {
+      return tokenStr.replace(/^Bearer\s+/i, '').trim();
+    }
+    return null;
+  }
+
   /**
    * Apply Grauity theme class to document body and sync with Newton School localStorage
    */
@@ -129,7 +149,7 @@
         let token = null;
         try {
           const raw = localStorage.getItem('auth-token');
-          token = raw ? (raw.startsWith('"') ? JSON.parse(raw) : raw) : null;
+          token = extractCleanAuthToken(raw);
         } catch (e) {}
         const courseHash = window.location.pathname.match(/\/course\/([^/]+)/)?.[1] || null;
         sendResponse({ token, courseHash });
@@ -162,6 +182,8 @@
             uid = parsedUser.uid || parsedUser.id || parsedUser.username || null;
           }
         } catch (e) {}
+
+        const token = extractCleanAuthToken(rawToken);
 
         chrome.storage.local.set({
           nst_auth_token: token,

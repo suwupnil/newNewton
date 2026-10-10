@@ -45,6 +45,26 @@ interface NormalizedQuestion {
 
 const CHOICE_LETTERS = ["A", "B", "C", "D", "E"];
 
+function extractCleanAuthToken(raw: string): string {
+  if (!raw) return "";
+  let parsed: any = raw;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    // raw is not a JSON string, fallback to original value
+  }
+  let tokenStr = "";
+  if (typeof parsed === "string") {
+    tokenStr = parsed;
+  } else if (typeof parsed === "object" && parsed !== null) {
+    tokenStr = parsed.token || parsed.access_token || "";
+  }
+  if (typeof tokenStr === "string") {
+    return tokenStr.replace(/^Bearer\s+/i, "").trim();
+  }
+  return "";
+}
+
 /**
  * Normalizes raw Newton LMS questions array into clean, structured questions
  */
@@ -180,7 +200,7 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
   }
 
   try {
-    const cleanToken = authToken.replace(/^Bearer\s+/i, "").trim();
+    const cleanToken = extractCleanAuthToken(authToken);
     const result = await fetchAndArchiveQuiz(courseHash, assessmentHash, cleanToken);
 
     if (result.status === "ALREADY_EXISTS") {
@@ -237,7 +257,7 @@ export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds
     return;
   }
 
-  const cleanToken = authToken.replace(/^Bearer\s+/i, "").trim();
+  const cleanToken = extractCleanAuthToken(authToken);
   logger.info(`[initialSyncSubmittedQuizzes] Starting initial sync for UID: ${uid || "anonymous"}...`);
 
   try {
@@ -344,6 +364,7 @@ export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds
           summary.newlyArchived += 1;
           logger.info(`[initialSyncSubmittedQuizzes] Archived solutions for "${quizTitle}" (${assessmentHash})`);
         } else {
+          logger.warn(`[initialSyncSubmittedQuizzes] Failed to archive ${assessmentHash}: ${syncResult.error}`);
           summary.failed += 1;
         }
       } catch (itemErr) {

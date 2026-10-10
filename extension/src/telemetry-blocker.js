@@ -24,6 +24,26 @@
     isBlockingEnabled = true;
   }
 
+  function extractCleanAuthToken(raw) {
+    if (!raw) return null;
+    let parsed = raw;
+    if (typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {}
+    }
+    let tokenStr = null;
+    if (typeof parsed === 'string') {
+      tokenStr = parsed;
+    } else if (typeof parsed === 'object' && parsed !== null) {
+      tokenStr = parsed.token || parsed.access_token || null;
+    }
+    if (typeof tokenStr === 'string') {
+      return tokenStr.replace(/^Bearer\s+/i, '').trim();
+    }
+    return null;
+  }
+
   function syncDocAttribute() {
     if (document.documentElement) {
       document.documentElement.setAttribute('data-newton-block-telemetry', isBlockingEnabled ? 'true' : 'false');
@@ -188,11 +208,8 @@
         const courseHash = quizSubmitMatch[1];
         const assessmentHash = quizSubmitMatch[2];
         try {
-          let authToken = null;
           const rawToken = localStorage.getItem('auth-token');
-          if (rawToken) {
-            authToken = rawToken.startsWith('"') ? JSON.parse(rawToken) : rawToken;
-          }
+          const authToken = extractCleanAuthToken(rawToken);
           window.postMessage({
             source: 'newton-enhancer-quiz-submitted',
             courseHash,
