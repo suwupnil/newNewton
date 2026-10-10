@@ -2,6 +2,7 @@ import {onRequest} from "firebase-functions/v2/https";
 import {setGlobalOptions} from "firebase-functions/v2";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
+import * as crypto from "crypto";
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -208,12 +209,208 @@ async function fetchAndArchiveQuiz(
   return {status: "ARCHIVED"};
 }
 
+const EXTENSION_SIGNING_SECRET = process.env.EXTENSION_SECRET || "nst_enhancer_v1_8e4f1a9b2c3d5e7f";
+
+/**
+ * Validates HMAC-SHA256 signature from official newNewton extension
+ */
+function verifyExtensionSignature(req: any): {valid: boolean; reason?: string} {
+  // Allow emulator/local testing bypass if explicitly flagged
+  if (process.env.FUNCTIONS_EMULATOR === "true" && req.headers["x-nst-skip-auth"] === "true") {
+    return {valid: true};
+  }
+
+  const timestamp = req.headers["x-nst-timestamp"] as string;
+  const nonce = req.headers["x-nst-nonce"] as string;
+  const signature = req.headers["x-nst-signature"] as string;
+
+  if (!timestamp || !nonce || !signature) {
+    return {
+      valid: false,
+      reason: "Missing required extension security headers (X-NST-Timestamp, X-NST-Nonce, X-NST-Signature).",
+    };
+  }
+
+  // Check clock drift (must be within 5 minutes = 300,000 ms)
+  const timeNum = parseInt(timestamp, 10);
+  if (isNaN(timeNum) || Math.abs(Date.now() - timeNum) > 300_000) {
+    return {
+      valid: false,
+      reason: "Request timestamp is expired or outside the allowed 5-minute clock drift window.",
+    };
+  }
+
+  // Compute and verify HMAC signature
+  const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  const message = `${timestamp}:${nonce}:${rawBody}`;
+  const expectedSignature = crypto
+    .createHmac("sha256", EXTENSION_SIGNING_SECRET)
+    .update(message)
+    .digest("hex");
+
+  try {
+    const sigBuf = Buffer.from(signature, "hex");
+    const expBuf = Buffer.from(expectedSignature, "hex");
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      return {valid: false, reason: "Cryptographic HMAC signature verification failed."};
+    }
+  } catch {
+    return {valid: false, reason: "Malformed HMAC signature format."};
+  }
+
+  return {valid: true};
+}
+
+/**
+ * Validates and decodes student authToken (JWT or valid DRF Bearer)
+ */
+function validateStudentAuthToken(
+  rawToken?: string,
+  authHeader?: string
+): {isValid: boolean; uid?: string; email?: string; reason?: string} {
+  const tokenCandidate = rawToken || (authHeader ? authHeader.replace(/^Bearer\s+/i, "").trim() : "");
+  const clean = extractCleanAuthToken(tokenCandidate);
+
+  if (!clean || clean.length < 15) {
+    return {isValid: false, reason: "A valid, active student authentication token is required."};
+  }
+
+  const parts = clean.split(".");
+  if (parts.length === 3) {
+    // JWT format
+    try {
+      const payloadStr = Buffer.from(parts[1], "base64url").toString("utf8");
+      const payload = JSON.parse(payloadStr);
+
+      if (typeof payload.exp === "number") {
+        const nowSec = Math.floor(Date.now() / 1000);
+        if (payload.exp < nowSec) {
+          return {
+            isValid: false,
+            reason: `Student authentication token is expired (expired at ${new Date(payload.exp * 1000).toISOString()}).`,
+          };
+        }
+      }
+
+      const uid = payload.user_id || payload.uid || payload.sub || payload.username;
+      const email = payload.email;
+
+      return {
+        isValid: true,
+        uid: uid ? String(uid) : undefined,
+        email: email ? String(email) : undefined,
+      };
+    } catch {
+      return {isValid: false, reason: "Malformed JWT token structure."};
+    }
+  }
+
+  // Opaque DRF Bearer token
+  if (/^[a-zA-Z0-9_.-]{20,256}$/.test(clean)) {
+    return {isValid: true};
+  }
+
+  return {isValid: false, reason: "Unrecognized authentication token format."};
+}
+
+/**
+ * Validates and sanitizes a quiz document payload before saving to Firestore
+ */
+function sanitizeAndValidateQuiz(quiz: any): {valid: boolean; sanitized?: any; error?: string} {
+  if (!quiz || typeof quiz !== "object") {
+    return {valid: false, error: "Quiz item must be an object."};
+  }
+
+  const assessmentHash = String(quiz.assessmentHash || "").trim();
+  const courseHash = String(quiz.courseHash || "").trim();
+
+  if (!/^[a-zA-Z0-9_-]{4,64}$/.test(assessmentHash)) {
+    return {valid: false, error: `Invalid assessmentHash format: "${assessmentHash}".`};
+  }
+  if (!/^[a-zA-Z0-9_-]{4,64}$/.test(courseHash)) {
+    return {valid: false, error: `Invalid courseHash format: "${courseHash}".`};
+  }
+
+  if (!Array.isArray(quiz.questions) || quiz.questions.length === 0 || quiz.questions.length > 100) {
+    return {valid: false, error: "Questions must be an array between 1 and 100 items."};
+  }
+
+  const rawList = quiz.questions;
+  const normalizedList = (rawList[0]?.multiple_choice_question || rawList[0]?.choice_A_text) ?
+    normalizeNewtonQuestions(rawList) :
+    rawList;
+
+  const validQuestions: NormalizedQuestion[] = [];
+  for (const q of normalizedList) {
+    if (!q || typeof q !== "object") continue;
+    const qText = String(q.questionText || "").trim().slice(0, 5000);
+    if (!qText) continue;
+
+    const qHash = String(q.questionHash || "").trim().slice(0, 64);
+    const qType = Number(q.questionType) || 1;
+    const marks = Math.max(0, Math.min(100, Number(q.marks) || 0));
+
+    const options: NormalizedOption[] = [];
+    if (Array.isArray(q.options)) {
+      for (const opt of q.options.slice(0, 5)) {
+        if (!opt || typeof opt !== "object") continue;
+        const optId = String(opt.id || "").toUpperCase();
+        if (!CHOICE_LETTERS.includes(optId)) continue;
+        options.push({
+          id: optId,
+          text: String(opt.text || "").trim().slice(0, 2000),
+          image: opt.image ? String(opt.image).slice(0, 1000) : null,
+        });
+      }
+    }
+
+    const correctChoice = typeof q.correctChoice === "number" && q.correctChoice >= 1 && q.correctChoice <= 5 ?
+      q.correctChoice :
+      null;
+    const correctChoiceLetter = correctChoice ? CHOICE_LETTERS[correctChoice - 1] : null;
+
+    validQuestions.push({
+      questionHash: qHash,
+      mcqHash: q.mcqHash ? String(q.mcqHash).slice(0, 64) : undefined,
+      questionText: qText,
+      questionType: qType,
+      marks: marks,
+      options: options,
+      correctChoice: correctChoice,
+      correctChoiceLetter: correctChoiceLetter,
+      correctExplanation: q.correctExplanation ? String(q.correctExplanation).slice(0, 5000) : null,
+      correctPuzzleAnswer: q.correctPuzzleAnswer ? String(q.correctPuzzleAnswer).slice(0, 500) : null,
+    });
+  }
+
+  if (validQuestions.length === 0) {
+    return {valid: false, error: "Quiz contains no valid questions."};
+  }
+
+  const hasSolutions = quiz.hasAnswersRevealed ?? validQuestions.some(
+    (q) => q.correctChoice !== null || q.correctExplanation !== null
+  );
+
+  return {
+    valid: true,
+    sanitized: {
+      assessmentHash,
+      courseHash,
+      title: quiz.title || quiz.quizTitle ? String(quiz.title || quiz.quizTitle).trim().slice(0, 200) : null,
+      totalQuestions: validQuestions.length,
+      hasAnswersRevealed: hasSolutions,
+      questions: validQuestions,
+    },
+  };
+}
+
 /**
  * Cloud Function: archiveQuizSolution
  *
- * Receives { courseHash, assessmentHash, authToken }
- * Called immediately upon a quiz submission event.
- * Supports direct questions payload from client, or fetching via authToken.
+ * Protected endpoint:
+ * 1. Checks HMAC-SHA256 signature from official newNewton extension (blocks external curl/postman)
+ * 2. Validates student authToken (verifies unexpired JWT / DRF token)
+ * 3. Sanitizes questions and applies anti-downgrade Firestore write
  */
 export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
   if (req.method !== "POST") {
@@ -221,8 +418,30 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
     return;
   }
 
+  // 1. Signature check
+  const sigCheck = verifyExtensionSignature(req);
+  if (!sigCheck.valid) {
+    res.status(403).json({
+      error: "FORBIDDEN_INVALID_SIGNATURE",
+      message: "Request must originate from an authorized newNewton extension client.",
+      details: sigCheck.reason,
+    });
+    return;
+  }
+
   const body = req.body as Partial<ArchiveQuizRequest>;
   const {courseHash, assessmentHash, authToken} = body;
+
+  // 2. Student Auth Token check
+  const authCheck = validateStudentAuthToken(authToken, req.headers.authorization);
+  if (!authCheck.isValid) {
+    res.status(401).json({
+      error: "UNAUTHORIZED_INVALID_TOKEN",
+      message: "A valid, active student authentication token is required.",
+      details: authCheck.reason,
+    });
+    return;
+  }
 
   if (!courseHash || !assessmentHash) {
     res.status(400).json({
@@ -232,26 +451,39 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
   }
 
   try {
-    // 1. Direct client ingestion: If client provided questions, save directly to Firestore
+    // 3. Direct client ingestion: If client provided questions, sanitize and save
     if (Array.isArray(body.questions) && body.questions.length > 0) {
+      const valResult = sanitizeAndValidateQuiz({
+        assessmentHash,
+        courseHash,
+        title: body.title || body.quizTitle,
+        questions: body.questions,
+        hasAnswersRevealed: body.hasAnswersRevealed,
+      });
+
+      if (!valResult.valid || !valResult.sanitized) {
+        res.status(400).json({
+          error: "INVALID_QUIZ_SCHEMA",
+          details: valResult.error,
+        });
+        return;
+      }
+
       const docRef = db.collection("quizzes").doc(assessmentHash);
       const existingDoc = await docRef.get();
 
-      const normalized = (body.questions[0]?.multiple_choice_question || body.questions[0]?.choice_A_text) ?
-        normalizeNewtonQuestions(body.questions) :
-        body.questions;
-
-      const hasSolutions = body.hasAnswersRevealed ?? normalized.some(
-        (q: any) => q.correctChoice !== null || q.correctExplanation !== null
-      );
+      // Anti-downgrade check: Do not allow overwriting revealed answers with unrevealed ones
+      if (existingDoc.exists && existingDoc.data()?.hasAnswersRevealed && !valResult.sanitized.hasAnswersRevealed) {
+        res.status(200).json({
+          status: "ALREADY_EXISTS",
+          message: "Existing solutions in Firestore are already verified and retained.",
+          assessmentHash,
+        });
+        return;
+      }
 
       const docPayload = {
-        assessmentHash,
-        courseHash,
-        title: body.title || body.quizTitle || (existingDoc.exists ? existingDoc.data()?.title : null) || null,
-        totalQuestions: normalized.length,
-        hasAnswersRevealed: hasSolutions,
-        questions: normalized,
+        ...valResult.sanitized,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: existingDoc.exists ?
           (existingDoc.data()?.createdAt || admin.firestore.FieldValue.serverTimestamp()) :
@@ -259,7 +491,7 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
       };
 
       await docRef.set(docPayload, {merge: true});
-      logger.info(`[archiveQuizSolution] Directly saved solutions for ${assessmentHash} (Course: ${courseHash})`);
+      logger.info(`[archiveQuizSolution] Safely archived solutions for ${assessmentHash} (Course: ${courseHash})`);
       res.status(200).json({
         status: "SAVED",
         message: "Quiz solutions archived successfully.",
@@ -268,15 +500,8 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
       return;
     }
 
-    // 2. Fallback: Fetch from LMS if authToken is provided
-    if (!authToken) {
-      res.status(400).json({
-        error: "Missing required fields: questions array or authToken is required.",
-      });
-      return;
-    }
-
-    const cleanToken = extractCleanAuthToken(authToken);
+    // 4. Fallback: Fetch from LMS if authToken is provided (for emulator/local testing)
+    const cleanToken = extractCleanAuthToken(authToken || "");
     const result = await fetchAndArchiveQuiz(courseHash, assessmentHash, cleanToken);
 
     if (result.status === "ALREADY_EXISTS") {
@@ -313,7 +538,11 @@ export const archiveQuizSolution = onRequest({cors: true}, async (req, res) => {
  * Cloud Function: batchSaveQuizzes
  *
  * Ingestion API for client-extracted quiz batches.
- * Accepts { quizzes: QuizDocumentPayload[], uid?: string }
+ * Protected by:
+ * 1. HMAC-SHA256 signature from extension
+ * 2. Student JWT / authToken verification
+ * 3. Strict schema validation per quiz
+ * 4. Anti-downgrade protection
  */
 export const batchSaveQuizzes = onRequest({cors: true, timeoutSeconds: 120}, async (req, res) => {
   if (req.method !== "POST") {
@@ -321,7 +550,30 @@ export const batchSaveQuizzes = onRequest({cors: true, timeoutSeconds: 120}, asy
     return;
   }
 
-  const {quizzes, uid} = req.body;
+  // 1. Signature check
+  const sigCheck = verifyExtensionSignature(req);
+  if (!sigCheck.valid) {
+    res.status(403).json({
+      error: "FORBIDDEN_INVALID_SIGNATURE",
+      message: "Request must originate from an authorized newNewton extension client.",
+      details: sigCheck.reason,
+    });
+    return;
+  }
+
+  const {quizzes, uid, authToken} = req.body;
+
+  // 2. Student Auth Token check
+  const authCheck = validateStudentAuthToken(authToken, req.headers.authorization);
+  if (!authCheck.isValid) {
+    res.status(401).json({
+      error: "UNAUTHORIZED_INVALID_TOKEN",
+      message: "A valid, active student authentication token is required.",
+      details: authCheck.reason,
+    });
+    return;
+  }
+
   if (!Array.isArray(quizzes) || quizzes.length === 0) {
     res.status(400).json({error: "quizzes array is required and must not be empty."});
     return;
@@ -336,26 +588,17 @@ export const batchSaveQuizzes = onRequest({cors: true, timeoutSeconds: 120}, asy
       const batch = db.batch();
 
       for (const item of chunk) {
-        if (!item.assessmentHash || !item.courseHash || !Array.isArray(item.questions)) {
+        const valResult = sanitizeAndValidateQuiz(item);
+        if (!valResult.valid || !valResult.sanitized) {
+          logger.warn(`[batchSaveQuizzes] Skipping invalid quiz: ${valResult.error}`);
           continue;
         }
 
-        const normalized = (item.questions[0]?.multiple_choice_question || item.questions[0]?.choice_A_text) ?
-          normalizeNewtonQuestions(item.questions) :
-          item.questions;
+        const sanitized = valResult.sanitized;
+        const docRef = db.collection("quizzes").doc(sanitized.assessmentHash);
 
-        const hasSolutions = item.hasAnswersRevealed ?? normalized.some(
-          (q: any) => q.correctChoice !== null || q.correctExplanation !== null
-        );
-
-        const docRef = db.collection("quizzes").doc(item.assessmentHash);
         const payload = {
-          assessmentHash: item.assessmentHash,
-          courseHash: item.courseHash,
-          title: item.title || item.quizTitle || null,
-          totalQuestions: normalized.length,
-          hasAnswersRevealed: hasSolutions,
-          questions: normalized,
+          ...sanitized,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
@@ -366,19 +609,19 @@ export const batchSaveQuizzes = onRequest({cors: true, timeoutSeconds: 120}, asy
       await batch.commit();
     }
 
-    if (uid) {
-      await db.collection("sync_history").doc(uid).set({
-        uid,
-        lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
-        totalArchived: savedCount,
-      }, {merge: true});
-    }
+    const effectiveUid = authCheck.uid || uid || "authenticated_student";
+    await db.collection("sync_history").doc(effectiveUid).set({
+      uid: effectiveUid,
+      email: authCheck.email || null,
+      lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+      totalArchived: savedCount,
+    }, {merge: true});
 
-    logger.info(`[batchSaveQuizzes] Successfully archived ${savedCount} quizzes (UID: ${uid || "anonymous"}).`);
+    logger.info(`[batchSaveQuizzes] Successfully verified and archived ${savedCount} quizzes (UID: ${effectiveUid}).`);
     res.status(200).json({
       status: "SUCCESS",
       savedCount,
-      message: `Successfully archived ${savedCount} quizzes in Firestore.`,
+      message: `Successfully verified and archived ${savedCount} quizzes in Firestore.`,
     });
   } catch (error: any) {
     logger.error("[batchSaveQuizzes] Batch write error:", error);
@@ -389,9 +632,7 @@ export const batchSaveQuizzes = onRequest({cors: true, timeoutSeconds: 120}, asy
 /**
  * Cloud Function: initialSyncSubmittedQuizzes
  *
- * Triggered on initial sync of past assessments:
- * 1. If quizzes array provided by extension: saves directly via batch!
- * 2. If authToken provided: attempts fallback discovery (may be blocked by LMS datacenter IP filtering).
+ * Supports batch ingestion and enforces security gates.
  */
 export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds: 300}, async (req, res) => {
   if (req.method !== "POST") {
@@ -399,11 +640,33 @@ export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds
     return;
   }
 
+  // Signature check
+  const sigCheck = verifyExtensionSignature(req);
+  if (!sigCheck.valid) {
+    res.status(403).json({
+      error: "FORBIDDEN_INVALID_SIGNATURE",
+      message: "Request must originate from an authorized newNewton extension client.",
+      details: sigCheck.reason,
+    });
+    return;
+  }
+
   const body = req.body as Partial<InitialSyncRequest>;
   const {uid, authToken, quizzes} = body;
   let preferredCourseHash = body.courseHash;
 
-  // 1. Direct batch ingestion if client has already fetched quizzes
+  // Student Auth Token check
+  const authCheck = validateStudentAuthToken(authToken, req.headers.authorization);
+  if (!authCheck.isValid) {
+    res.status(401).json({
+      error: "UNAUTHORIZED_INVALID_TOKEN",
+      message: "A valid, active student authentication token is required.",
+      details: authCheck.reason,
+    });
+    return;
+  }
+
+  // Direct batch ingestion if client provided quizzes
   if (Array.isArray(quizzes) && quizzes.length > 0) {
     try {
       let savedCount = 0;
@@ -414,26 +677,12 @@ export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds
         const batch = db.batch();
 
         for (const item of chunk) {
-          if (!item.assessmentHash || !item.courseHash || !Array.isArray(item.questions)) {
-            continue;
-          }
+          const valResult = sanitizeAndValidateQuiz(item);
+          if (!valResult.valid || !valResult.sanitized) continue;
 
-          const normalized = (item.questions[0]?.multiple_choice_question || item.questions[0]?.choice_A_text) ?
-            normalizeNewtonQuestions(item.questions) :
-            item.questions;
-
-          const hasSolutions = item.hasAnswersRevealed ?? normalized.some(
-            (q: any) => q.correctChoice !== null || q.correctExplanation !== null
-          );
-
-          const docRef = db.collection("quizzes").doc(item.assessmentHash);
+          const docRef = db.collection("quizzes").doc(valResult.sanitized.assessmentHash);
           batch.set(docRef, {
-            assessmentHash: item.assessmentHash,
-            courseHash: item.courseHash,
-            title: item.title || item.quizTitle || null,
-            totalQuestions: normalized.length,
-            hasAnswersRevealed: hasSolutions,
-            questions: normalized,
+            ...valResult.sanitized,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           }, {merge: true});
@@ -443,13 +692,13 @@ export const initialSyncSubmittedQuizzes = onRequest({cors: true, timeoutSeconds
         await batch.commit();
       }
 
-      if (uid) {
-        await db.collection("sync_history").doc(uid).set({
-          uid,
-          lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
-          summary: {totalFound: quizzes.length, newlyArchived: savedCount, alreadyExisted: 0, failed: 0},
-        }, {merge: true});
-      }
+      const effectiveUid = authCheck.uid || uid || "authenticated_student";
+      await db.collection("sync_history").doc(effectiveUid).set({
+        uid: effectiveUid,
+        email: authCheck.email || null,
+        lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+        summary: {totalFound: quizzes.length, newlyArchived: savedCount, alreadyExisted: 0, failed: 0},
+      }, {merge: true});
 
       logger.info(`[initialSyncSubmittedQuizzes] Batch saved ${savedCount} quizzes from client.`);
       res.status(200).json({

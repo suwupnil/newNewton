@@ -332,21 +332,69 @@ export async function fetchAssessmentQuestionsFromLMS(token, courseHash, assessm
   return Array.isArray(data) ? data : (data.questions || []);
 }
 
+const EXTENSION_SIGNING_SECRET = 'nst_enhancer_v1_8e4f1a9b2c3d5e7f';
+
+/**
+ * Generates cryptographic HMAC-SHA256 signature headers using browser WebCrypto
+ */
+async function createSignatureHeaders(bodyString) {
+  const timestamp = Date.now().toString();
+  const nonce = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : (Math.random().toString(36).slice(2) + Date.now().toString(36));
+  const message = `${timestamp}:${nonce}:${bodyString}`;
+
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(EXTENSION_SIGNING_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const sigBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+    const sigHex = Array.from(new Uint8Array(sigBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    return {
+      'X-NST-Timestamp': timestamp,
+      'X-NST-Nonce': nonce,
+      'X-NST-Signature': sigHex
+    };
+  } catch (e) {
+    console.warn('[QuizClient] WebCrypto signature generation error:', e);
+    return {};
+  }
+}
+
 /**
  * Saves a single quiz directly to Cloud Functions
  */
-export async function saveQuizSolutionToCloud(courseHash, assessmentHash, quizPayload) {
+export async function saveQuizSolutionToCloud(courseHash, assessmentHash, quizPayload, authToken = null) {
   const endpoint = getCloudFunctionUrl('archiveQuizSolution');
+  const cleanToken = extractCleanAuthToken(authToken);
+
+  const bodyObj = {
+    courseHash,
+    assessmentHash,
+    title: quizPayload.title || null,
+    questions: quizPayload.questions,
+    hasAnswersRevealed: quizPayload.hasAnswersRevealed ?? true,
+    authToken: cleanToken || null
+  };
+  const bodyString = JSON.stringify(bodyObj);
+  const sigHeaders = await createSignatureHeaders(bodyString);
+
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      courseHash,
-      assessmentHash,
-      title: quizPayload.title || null,
-      questions: quizPayload.questions,
-      hasAnswersRevealed: quizPayload.hasAnswersRevealed ?? true
-    })
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cleanToken ? { 'Authorization': `Bearer ${cleanToken}` } : {}),
+      ...sigHeaders
+    },
+    body: bodyString
   });
 
   const result = await res.json();
@@ -359,16 +407,26 @@ export async function saveQuizSolutionToCloud(courseHash, assessmentHash, quizPa
 /**
  * Ingests a batch of extracted quizzes into Firestore via Cloud Function
  */
-export async function batchSaveQuizzesToCloud(quizzes, uid = null) {
+export async function batchSaveQuizzesToCloud(quizzes, uid = null, authToken = null) {
   if (!Array.isArray(quizzes) || quizzes.length === 0) {
     return { status: 'SUCCESS', savedCount: 0 };
   }
 
   const endpoint = getCloudFunctionUrl('batchSaveQuizzes');
+  const cleanToken = extractCleanAuthToken(authToken);
+
+  const bodyObj = { quizzes, uid, authToken: cleanToken || null };
+  const bodyString = JSON.stringify(bodyObj);
+  const sigHeaders = await createSignatureHeaders(bodyString);
+
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ quizzes, uid })
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cleanToken ? { 'Authorization': `Bearer ${cleanToken}` } : {}),
+      ...sigHeaders
+    },
+    body: bodyString
   });
 
   const result = await res.json();
@@ -483,7 +541,7 @@ export async function syncHistoricalQuizzes(token, uid = null, preferredCourseHa
       });
     }
 
-    await batchSaveQuizzesToCloud(quizzesToSave, uid);
+    await batchSaveQuizzesToCloud(quizzesToSave, uid, cleanToken);
     summary.newlyArchived = quizzesToSave.length;
   }
 
@@ -533,7 +591,7 @@ export async function handleQuizSubmissionArchival(courseHash, assessmentHash, a
     const result = await saveQuizSolutionToCloud(courseHash, assessmentHash, {
       questions: normalized,
       hasAnswersRevealed: hasSolutions
-    });
+    }, token);
 
     console.log('[QuizClient] Quiz solutions archived successfully to Firestore:', result);
     return result;
