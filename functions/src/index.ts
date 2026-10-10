@@ -48,17 +48,33 @@ const CHOICE_LETTERS = ["A", "B", "C", "D", "E"];
 function extractCleanAuthToken(raw: string): string {
   if (!raw) return "";
   let parsed: any = raw;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    // raw is not a JSON string, fallback to original value
+  let attempts = 0;
+  while (typeof parsed === "string" && attempts < 3) {
+    try {
+      const temp = JSON.parse(parsed);
+      if (typeof temp === "object" || typeof temp === "string") {
+        parsed = temp;
+      } else {
+        break;
+      }
+    } catch {
+      break;
+    }
+    attempts++;
   }
+
   let tokenStr = "";
   if (typeof parsed === "string") {
-    tokenStr = parsed;
+    const tokenMatch = parsed.match(/['"]?(?:access_)?token['"]?\s*:\s*['"]?([^'"}\s]+)['"]?/i);
+    if (tokenMatch) {
+      tokenStr = tokenMatch[1];
+    } else {
+      tokenStr = parsed;
+    }
   } else if (typeof parsed === "object" && parsed !== null) {
     tokenStr = parsed.token || parsed.access_token || "";
   }
+
   if (typeof tokenStr === "string") {
     return tokenStr.replace(/^Bearer\s+/i, "").trim();
   }

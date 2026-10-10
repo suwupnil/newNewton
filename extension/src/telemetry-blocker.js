@@ -27,17 +27,33 @@
   function extractCleanAuthToken(raw) {
     if (!raw) return null;
     let parsed = raw;
-    if (typeof raw === 'string') {
+    let attempts = 0;
+    while (typeof parsed === 'string' && attempts < 3) {
       try {
-        parsed = JSON.parse(raw);
-      } catch (e) {}
+        const temp = JSON.parse(parsed);
+        if (typeof temp === 'object' || typeof temp === 'string') {
+          parsed = temp;
+        } else {
+          break;
+        }
+      } catch (e) {
+        break;
+      }
+      attempts++;
     }
+
     let tokenStr = null;
     if (typeof parsed === 'string') {
-      tokenStr = parsed;
+      const tokenMatch = parsed.match(/['"]?(?:access_)?token['"]?\s*:\s*['"]?([^'"}\s]+)['"]?/i);
+      if (tokenMatch) {
+        tokenStr = tokenMatch[1];
+      } else {
+        tokenStr = parsed;
+      }
     } else if (typeof parsed === 'object' && parsed !== null) {
       tokenStr = parsed.token || parsed.access_token || null;
     }
+
     if (typeof tokenStr === 'string') {
       return tokenStr.replace(/^Bearer\s+/i, '').trim();
     }
