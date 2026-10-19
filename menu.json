@@ -1,268 +1,267 @@
 {
-    "Monday": {
-        "breakfast": [
-            "Banana",
-            "Curd Rice",
-            "Muesli",
-            "Veg Uttapam",
-            "Sambar & Peanut Chutney",
-            "Hot Milk",
-            "Cold Milk (D)",
-            "Tea (D)",
-            "Coffee Powder",
-            "Bread/Butter/Jam"
-        ],
-        "lunch": [
-            "Curd",
-            "Green Salad",
-            "Rajma Masala",
-            "Dahi Lauki Chana",
-            "Kara Chutney",
-            "Steamed Rice",
-            "Chapati",
-            "Gulab Jamun"
-        ],
-        "snacks": [
-            "French Fries",
-            "Ketchup",
-            "Hot Coffee",
-            "Tea (D)"
-        ],
-        "dinner": [
-            "Cucumber Salad",
-            "Punjabi Urad-Chana Dal",
-            "Soya Aloo Matar Masala",
-            "Cabbage Fry SI Style",
-            "Rice",
-            "Chapati"
-        ]
-    },
-    "Tuesday": {
-        "breakfast": [
-            "Watermelon",
-            "Aloo Toast",
-            "Chocos",
-            "Semiya Upma",
-            "Spicy Peanut Tomato Chutney",
-            "Hot Milk (D)",
-            "Cold Milk (D)",
-            "Tea (D)",
-            "Coffee Powder",
-            "Bread/Butter/Jam"
-        ],
-        "lunch": [
-            "Sweet Lassi",
-            "Pickle Onion",
-            "Chole Masala",
-            "Chutney Aloo",
-            "Pulusu",
-            "Ghee Rice",
-            "Poori"
-        ],
-        "snacks": [
-            "Ragada Patties",
-            "Chutney",
-            "Hot Milk (D)",
-            "Tea (D)",
-            "Coffee Powder"
-        ],
-        "dinner": [
-            "Green Salad",
-            "Veg Kofta Curry",
-            "Chef Spl Moong Dal",
-            "Tomato Sambar",
-            "Jeera Rice",
-            "Chapati",
-            "Mango Mousse"
-        ]
-    },
-    "Wednesday": {
-        "breakfast": [
-            "Banana",
-            "Pan Cake",
-            "Cornflakes",
-            "Pav",
-            "Bhaji",
-            "Hot Milk (D)",
-            "Cold Milk (D)",
-            "Tea (D)",
-            "Coffee Powder",
-            "Bread/Butter/Jam"
-        ],
-        "lunch": [
-            "Curd",
-            "Green Salad",
-            "Paneer Makhni",
-            "Black Masoor Lasooni",
-            "Jeera Rice",
-            "Chapati",
-            "Ice Cream"
-        ],
-        "snacks": [
-            "Pyaz Kachori",
-            "Cold Coffee",
-            "Tea (D)"
-        ],
-        "dinner": [
-            "Sprout Salad",
-            "Gobi Aloo Matar Masala",
-            "Rajma Jammu Style",
-            "Beens Dry",
-            "Ghee Rice",
-            "Chapati"
-        ]
-    },
-    "Thursday": {
-        "breakfast": [
-            "Watermelon",
-            "Dalia",
-            "Muesli",
-            "Aloo Paneer Paratha",
-            "Curd & Pickle",
-            "Hot Milk (D)",
-            "Cold Milk (D)",
-            "Tea (D)",
-            "Coffee Powder",
-            "Bread/Butter/Jam"
-        ],
-        "lunch": [
-            "Boondi Raita",
-            "Cucumber Salad",
-            "Kadhi Pakori",
-            "Achari Aloo Jeera",
-            "Onion Pacchadi",
-            "Rice",
-            "Chapati"
-        ],
-        "snacks": [
-            "Paneer Puff",
-            "Ketchup",
-            "Hot Milk (D)",
-            "Tea (D)",
-            "Coffee Powder"
-        ],
-        "dinner": [
-            "Cucumber Salad",
-            "Tofu Chilli",
-            "Rajma Masala",
-            "Plain Rice",
-            "Chapati",
-            "Sabudana Kheer"
-        ]
-    },
-    "Friday": {
-        "breakfast": [
-            "Banana",
-            "Aloo Toast",
-            "Chocos",
-            "Poori",
-            "Aloo Tamatar",
-            "Hot Milk (D)",
-            "Cold Milk (D)",
-            "Tea (D)",
-            "Coffee Powder",
-            "Bread/Butter/Jam"
-        ],
-        "lunch": [
-            "Curd",
-            "Sprout Salad",
-            "Mix Veg",
-            "Rajasthani Dal",
-            "Garlic Chutney",
-            "Plain Rice",
-            "Chapati",
-            "Churma"
-        ],
-        "snacks": [
-            "Chole Chaat",
-            "Sev & Chutney",
-            "Cold Coffee",
-            "Tea (D)",
-            "Coffee Powder"
-        ],
-        "dinner": [
-            "Cucumber Salad",
-            "Matar Paneer",
-            "Sabut Dal Bahar",
-            "Jeera Rice",
-            "Chapati"
-        ]
-    },
-    "Saturday": {
-        "breakfast": [
-            "Watermelon",
-            "Pasta in Creamy Red Sauce",
-            "Cornflakes",
-            "Sooji Chila",
-            "Khatti-Meethi Chutney",
-            "Hot Milk (D)",
-            "Cold Milk (D)",
-            "Tea (D)",
-            "Coffee Powder",
-            "Bread/Butter/Jam"
-        ],
-        "lunch": [
-            "Curd",
-            "Cucumber-Carrot Salad",
-            "Parwal Aloo Curry",
-            "Dalma",
-            "Rasam",
-            "Butter Rice",
-            "Chapati"
-        ],
-        "snacks": [
-            "Veg Pakora",
-            "Ketchup",
-            "Hot Milk (D)",
-            "Tea (D)",
-            "Coffee Powder"
-        ],
-        "dinner": [
-            "Moong Sprout Salad",
-            "Capsicum Corn Aloo Dry",
-            "Dal Bukhara",
-            "Tamata Pappu",
-            "Ghee Rice",
-            "Chapati",
-            "Pastry"
-        ]
-    },
-    "Sunday": {
-        "breakfast": [
-            "Banana",
-            "Masala Oats",
-            "Muesli",
-            "Paratha",
-            "Chana Aloo Sabzi",
-            "Cold/Hot Milk (D)",
-            "Tea (D)",
-            "Coffee Powder",
-            "Bread/Butter/Jam"
-        ],
-        "lunch": [
-            "Curd",
-            "Pasta Salad",
-            "Soya Chaap Butter Masala",
-            "Mix Yellow Dal Adraki",
-            "Brinjal Tomato Curry",
-            "Plain Rice",
-            "Roti",
-            "Ice Cream"
-        ],
-        "snacks": [
-            "Samosa",
-            "Sonth Chutney",
-            "Cold Coffee",
-            "Tea (D)",
-            "Coffee Powder"
-        ],
-        "dinner": [
-            "Green Salad",
-            "Hara Bhara Aloo Chatpata",
-            "Lobia Masala",
-            "Beetroot Poriyal",
-            "Steamed Rice",
-            "Chapati"
-        ]
-    }
+  "Monday": {
+    "breakfast": [
+      "Mix Fruit",
+      "Masala Oats",
+      "Chocos",
+      "Kanda-Sev Poha",
+      "Hara Chutney",
+      "Hot Milk",
+      "Cold Milk (D)",
+      "Tea (D)",
+      "Coffee Powder",
+      "Bread/Butter/Jam"
+    ],
+    "lunch": [
+      "Curd",
+      "Green Salad",
+      "Cholar Dal Coconut",
+      "Bhandare Ke Aloo",
+      "Vonkai Pacchadi",
+      "Steamed Rice",
+      "Poori",
+      "Kesari Halwa"
+    ],
+    "snacks": [
+      "Veg Pizza",
+      "Ketchup",
+      "Hot Coffee",
+      "Tea (D)"
+    ],
+    "dinner": [
+      "Cucumber Salad",
+      "Arhar Dal Lassoni",
+      "Matar Mushroom Makhana",
+      "Andhra Aloo",
+      "Rice",
+      "Chapati"
+    ]
+  },
+  "Tuesday": {
+    "breakfast": [
+      "Watermelon",
+      "Sandwich",
+      "Muesli",
+      "Veg Upma",
+      "Coconut Chutney",
+      "Hot Milk (D)",
+      "Cold Milk (D)",
+      "Tea (D)",
+      "Coffee Powder",
+      "Bread/Butter/Jam"
+    ],
+    "lunch": [
+      "Curd",
+      "Cucumber-Carrot Salad",
+      "Paneer Do-Pyaza",
+      "Lal Malka Dal Tarka",
+      "Ghee Rice",
+      "Chapati"
+    ],
+    "snacks": [
+      "Samosa",
+      "Chutney",
+      "Hot Milk (D)",
+      "Tea (D)",
+      "Coffee Powder"
+    ],
+    "dinner": [
+      "Green Salad",
+      "Chole Amritsari",
+      "Menthi Aloo Fry",
+      "Carrot-Beetroot Poriyal",
+      "Ghee Rice",
+      "Chapati",
+      "Ice Cream"
+    ]
+  },
+  "Wednesday": {
+    "breakfast": [
+      "Banana",
+      "Dalia",
+      "Cornflakes",
+      "Pav",
+      "Bhaji",
+      "Hot Milk (D)",
+      "Cold Milk (D)",
+      "Tea (D)",
+      "Coffee Powder",
+      "Bread/Butter/Jam"
+    ],
+    "lunch": [
+      "Cucumber-Carrot Raita",
+      "Pickle Onion",
+      "Lasoon Ki Theekhi Chutney",
+      "Dhaba Dal",
+      "Baingan-Aloo Ka Salan",
+      "Veg Masala Rice",
+      "Chapati",
+      "Coconut Ladoo"
+    ],
+    "snacks": [
+      "Bread Pakora",
+      "Sonth Ki Chutney",
+      "Cold Coffee",
+      "Tea (D)"
+    ],
+    "dinner": [
+      "Cucumber Salad",
+      "Panchratna Dal",
+      "Gobi Capsicum Aloo Masaledar",
+      "Pappu Charu",
+      "Rice",
+      "Chapati"
+    ]
+  },
+  "Thursday": {
+    "breakfast": [
+      "Watermelon",
+      "Masala Oats",
+      "Chocos",
+      "Sada Paratha",
+      "Desi Chana Ki Sabzi",
+      "Hot Milk (D)",
+      "Cold Milk (D)",
+      "Tea (D)",
+      "Coffee Powder",
+      "Bread/Butter/Jam"
+    ],
+    "lunch": [
+      "Curd",
+      "Green Salad",
+      "Sindhi Kadhi",
+      "Dum Aloo",
+      "Onion Pacchadi",
+      "Rice",
+      "Chapati"
+    ],
+    "snacks": [
+      "French Fries",
+      "Ketchup",
+      "Hot Milk (D)",
+      "Tea (D)",
+      "Coffee Powder"
+    ],
+    "dinner": [
+      "Chana Sprout with Tofu Salad",
+      "Palak Paneer",
+      "Dal Makhni",
+      "Plain Rice",
+      "Tandoori Roti",
+      "Pastry"
+    ]
+  },
+  "Friday": {
+    "breakfast": [
+      "Mix Fruit",
+      "Dalia",
+      "Muesli",
+      "Idli",
+      "Sambar & Chutney",
+      "Hot Milk (D)",
+      "Cold Milk (D)",
+      "Tea (D)",
+      "Coffee Powder",
+      "Bread/Butter/Jam"
+    ],
+    "lunch": [
+      "Curd",
+      "Cucumber Salad",
+      "Dal Makhni",
+      "Mix Veg",
+      "Sambar",
+      "Plain Rice",
+      "Chapati",
+      "Rice Kheer"
+    ],
+    "snacks": [
+      "Potato Peanut Chat",
+      "Sev & Chutney",
+      "Cold Coffee",
+      "Tea (D)",
+      "Coffee Powder"
+    ],
+    "dinner": [
+      "Green Salad",
+      "Rajma Masala",
+      "Soya Chaap Lababdar",
+      "Podi Coconut Beans",
+      "Jeera Rice",
+      "Chapati"
+    ]
+  },
+  "Saturday": {
+    "breakfast": [
+      "Watermelon",
+      "Chana Sprout with Tofu",
+      "Cornflakes",
+      "Aloo-Pyaaz Paratha",
+      "Curd & Pickle",
+      "Hot Milk (D)",
+      "Cold Milk (D)",
+      "Tea (D)",
+      "Coffee Powder",
+      "Bread/Butter/Jam"
+    ],
+    "lunch": [
+      "Curd",
+      "Cucumber-Carrot Salad",
+      "Chole Masale",
+      "Cabbage Peas Tamatar",
+      "Rasam",
+      "Butter Rice",
+      "Bhature"
+    ],
+    "snacks": [
+      "Aloo Matar Puff",
+      "Ketchup",
+      "Hot Milk (D)",
+      "Tea (D)",
+      "Coffee Powder"
+    ],
+    "dinner": [
+      "Cucumber Salad",
+      "Lauki Kofta Curry",
+      "Dal Bukhara",
+      "Dondakai Koora",
+      "Ghee Rice",
+      "Chapati",
+      "Kesar Jalebi"
+    ]
+  },
+  "Sunday": {
+    "breakfast": [
+      "Banana",
+      "Aloo Toast",
+      "Chocos",
+      "Pan Cake",
+      "Cold/Hot Milk (D)",
+      "Tea (D)",
+      "Coffee Powder",
+      "Bread/Butter/Jam"
+    ],
+    "lunch": [
+      "Curd",
+      "Mix Pasta Salad",
+      "Sabz Kitchidi",
+      "Jeera Aloo",
+      "Tamata Pacchadi",
+      "Roti"
+    ],
+    "snacks": [
+      "Gol-Gappe",
+      "Khatta Paani",
+      "Cold Coffee",
+      "Tea (D)",
+      "Coffee Powder"
+    ],
+    "dinner": [
+      "Pickle Onion",
+      "Palak Dal",
+      "Capsicum Aloo Dry",
+      "Cabbage Coconut",
+      "Steamed Rice",
+      "Chapati"
+    ]
+  }
 }
