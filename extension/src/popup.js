@@ -2607,11 +2607,109 @@ mysteryContainer?.addEventListener('click', async (e) => {
   }
 });
 
-// Auto-initialize Mess Menu, Attendance, Mystery, and Lazy Submit on start
+// ========================================================
+// 8. EXTENSION AUTO-UPDATE NOTIFIER
+// ========================================================
+
+/**
+ * Compares two semantic version strings (e.g. "1.3.0" vs "1.2.2").
+ * Returns 1 if v1 > v2, -1 if v1 < v2, and 0 if equal.
+ */
+function compareSemver(v1, v2) {
+  const clean1 = (v1 || '').replace(/^v/i, '').trim();
+  const clean2 = (v2 || '').replace(/^v/i, '').trim();
+  const parts1 = clean1.split('.').map(n => parseInt(n, 10) || 0);
+  const parts2 = clean2.split('.').map(n => parseInt(n, 10) || 0);
+  const len = Math.max(parts1.length, parts2.length);
+
+  for (let i = 0; i < len; i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
+/**
+ * Checks GitHub Releases API for newer newNewton versions.
+ * Employs a 1-hour local storage cache to stay within GitHub rate limits.
+ */
+async function checkForExtensionUpdates() {
+  const versionBadge = document.getElementById('extVersionBadge');
+  if (!versionBadge) return;
+
+  const currentVersion = chrome.runtime?.getManifest?.()?.version || '1.2.2';
+  versionBadge.textContent = `v${currentVersion}`;
+  versionBadge.title = `newNewton v${currentVersion} (Click for release notes)`;
+
+  const CACHE_KEY = 'newnewton_update_check';
+  const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+  try {
+    const cached = await chrome.storage.local.get([CACHE_KEY]);
+    const cachedData = cached[CACHE_KEY];
+    const now = Date.now();
+
+    let releaseData = null;
+
+    if (cachedData && (now - cachedData.timestamp) < CACHE_TTL_MS && cachedData.latestVersion) {
+      releaseData = cachedData;
+    } else {
+      // Query GitHub Releases list (first release in list is the newest)
+      const res = await fetch('https://api.github.com/repos/suwupnil/newNewton/releases?per_page=1', {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+
+      if (res.ok) {
+        const releases = await res.json();
+        if (Array.isArray(releases) && releases.length > 0) {
+          const latest = releases[0];
+          const rawTag = latest.tag_name || latest.name || '';
+          const cleanTag = rawTag.replace(/^v/i, '').trim();
+          
+          // Look for .zip or .crx download asset if available
+          const zipAsset = latest.assets?.find(a => a.name?.endsWith('.zip'));
+          const crxAsset = latest.assets?.find(a => a.name?.endsWith('.crx'));
+          const downloadUrl = zipAsset?.browser_download_url || crxAsset?.browser_download_url || latest.html_url || 'https://github.com/suwupnil/newNewton/releases/latest';
+
+          releaseData = {
+            timestamp: now,
+            latestVersion: cleanTag,
+            releaseUrl: latest.html_url || 'https://github.com/suwupnil/newNewton/releases/latest',
+            downloadUrl
+          };
+
+          await chrome.storage.local.set({ [CACHE_KEY]: releaseData });
+        }
+      }
+    }
+
+    if (releaseData && releaseData.latestVersion) {
+      if (compareSemver(releaseData.latestVersion, currentVersion) > 0) {
+        // Newer version available!
+        versionBadge.classList.add('badge-update-available');
+        versionBadge.href = releaseData.releaseUrl;
+        versionBadge.title = `Update available: v${releaseData.latestVersion}! Click to install update (.zip/.crx)`;
+        versionBadge.innerHTML = `
+          <svg class="badge-update-icon" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          <span>v${releaseData.latestVersion} Update</span>
+        `;
+      }
+    }
+  } catch (err) {
+    console.debug('[newNewton] Update check skipped or failed:', err);
+  }
+}
+
+// Auto-initialize Mess Menu, Attendance, Mystery, Lazy Submit, and Update Checker on start
 initMessMenu();
 initAttendance();
 initMystery();
 initLazySubmitSettings();
+checkForExtensionUpdates();
 
 
 

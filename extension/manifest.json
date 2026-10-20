@@ -18,6 +18,7 @@
     "https://my.newtonschool.co/*",
     "https://*.newtonschool.co/*",
     "https://raw.githubusercontent.com/*",
+    "https://api.github.com/*",
     "https://*.supabase.co/*",
     "http://127.0.0.1:54321/*"
   ],

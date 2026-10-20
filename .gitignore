@@ -21,3 +21,5 @@ dist/
 deno.lock
 .gemini/
 macos/build/
+refresh.sh
+.gitignore

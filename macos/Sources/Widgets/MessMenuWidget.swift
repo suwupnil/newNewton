@@ -64,13 +64,18 @@ public struct MenuProvider: TimelineProvider {
     }
 
     public func getTimeline(in context: Context, completion: @escaping (Timeline<MenuEntry>) -> Void) {
-        let (day, menu, isToday, meal, todayDay, todayMenu, todayMeal) = MenuDataManager.shared.loadMenuForSelectedDay()
-        let currentEntry = MenuEntry(date: Date(), day: day, menu: menu, isToday: isToday, meal: meal, todayDay: todayDay, todayMenu: todayMenu, todayMeal: todayMeal)
+        Task {
+            // Fetch from GitHub and store locally if never fetched or if a new Monday has arrived
+            await MenuDataManager.shared.ensureFreshMenuForCurrentWeek()
 
-        // Automatically refresh at the start of the next meal window, or in 15 minutes
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
-        let timeline = Timeline(entries: [currentEntry], policy: .after(nextUpdate))
-        completion(timeline)
+            let (day, menu, isToday, meal, todayDay, todayMenu, todayMeal) = MenuDataManager.shared.loadMenuForSelectedDay()
+            let currentEntry = MenuEntry(date: Date(), day: day, menu: menu, isToday: isToday, meal: meal, todayDay: todayDay, todayMenu: todayMenu, todayMeal: todayMeal)
+
+            // Automatically refresh at the start of the next meal window, or in 15 minutes
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
+            let timeline = Timeline(entries: [currentEntry], policy: .after(nextUpdate))
+            completion(timeline)
+        }
     }
 }
 
@@ -109,7 +114,18 @@ public struct MessMenuWidgetEntryView: View {
         }
         .environment(\.colorScheme, .dark)
         .containerBackground(for: .widget) {
-            NewtonTheme.bgSecondary
+            ZStack {
+                Color(red: 16/255, green: 18/255, blue: 22/255)
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.04),
+                        Color.clear,
+                        Color.black.opacity(0.18)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
         }
     }
 }
@@ -131,7 +147,18 @@ public struct TodayMessMenuWidget: Widget {
             )
             .environment(\.colorScheme, .dark)
             .containerBackground(for: .widget) {
-                NewtonTheme.bgSecondary
+                ZStack {
+                    Color(red: 16/255, green: 18/255, blue: 22/255)
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.04),
+                            Color.clear,
+                            Color.black.opacity(0.18)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
             }
         }
         .configurationDisplayName("Today's Mess Menu (2x1)")
@@ -148,23 +175,11 @@ public struct WeeklyMessMenuWidget: Widget {
 
     public var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: MenuProvider()) { entry in
-            MessMenuView(
-                day: entry.day,
-                menu: entry.menu,
-                isToday: entry.isToday,
-                currentDate: entry.date,
-                selectedMeal: entry.meal,
-                is2x1Mode: false
-            )
-            .environment(\.colorScheme, .dark)
-            .containerBackground(for: .widget) {
-                NewtonTheme.bgSecondary
-            }
+            MessMenuWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Campus Mess Menu (2x2)")
         .description("Weekly mess menu with day pills, side-by-side main & side courses, and meal navigation.")
         .contentMarginsDisabled()
-        .supportedFamilies([.systemLarge])
+        .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
-

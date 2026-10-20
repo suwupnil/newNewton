@@ -26,6 +26,8 @@ public struct SelectDayIntent: AppIntent {
             MenuDataManager.shared.selectDay(targetDay)
         }
         #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.menu")
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.today")
         WidgetCenter.shared.reloadAllTimelines()
         #endif
         return .result()
@@ -43,6 +45,8 @@ public struct NextDayIntent: AppIntent {
     public func perform() async throws -> some IntentResult {
         MenuDataManager.shared.advanceDay(by: 1)
         #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.menu")
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.today")
         WidgetCenter.shared.reloadAllTimelines()
         #endif
         return .result()
@@ -59,6 +63,8 @@ public struct PreviousDayIntent: AppIntent {
     public func perform() async throws -> some IntentResult {
         MenuDataManager.shared.advanceDay(by: -1)
         #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.menu")
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.today")
         WidgetCenter.shared.reloadAllTimelines()
         #endif
         return .result()
@@ -75,6 +81,8 @@ public struct TodayIntent: AppIntent {
     public func perform() async throws -> some IntentResult {
         MenuDataManager.shared.resetDay()
         #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.menu")
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.today")
         WidgetCenter.shared.reloadAllTimelines()
         #endif
         return .result()
@@ -92,6 +100,8 @@ public struct PreviousMealIntent: AppIntent {
     public func perform() async throws -> some IntentResult {
         MenuDataManager.shared.advanceMeal(by: -1)
         #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.menu")
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.today")
         WidgetCenter.shared.reloadAllTimelines()
         #endif
         return .result()
@@ -108,6 +118,38 @@ public struct NextMealIntent: AppIntent {
     public func perform() async throws -> some IntentResult {
         MenuDataManager.shared.advanceMeal(by: 1)
         #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.menu")
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.today")
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+        return .result()
+    }
+}
+
+// MARK: - Direct Meal Selection Intent
+@available(macOS 14.0, *)
+public struct SelectMealIntent: AppIntent {
+    public static var title: LocalizedStringResource = "Select Meal"
+    public static var description = IntentDescription("Select specific meal to view (Breakfast, Lunch, Snacks, Dinner)")
+
+    @Parameter(title: "Meal")
+    public var meal: String
+
+    public init() {
+        self.meal = "Breakfast"
+    }
+
+    public init(meal: MealType) {
+        self.meal = meal.rawValue
+    }
+
+    public func perform() async throws -> some IntentResult {
+        if let targetMeal = MealType(rawValue: meal) {
+            MenuDataManager.shared.selectMeal(targetMeal)
+        }
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.menu")
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.today")
         WidgetCenter.shared.reloadAllTimelines()
         #endif
         return .result()

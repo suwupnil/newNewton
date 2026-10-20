@@ -155,4 +155,3 @@ public struct SelectMealIntent: AppIntent {
         return .result()
     }
 }
-

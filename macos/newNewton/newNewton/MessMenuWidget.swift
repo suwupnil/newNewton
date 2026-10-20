@@ -64,13 +64,18 @@ public struct MenuProvider: TimelineProvider {
     }
 
     public func getTimeline(in context: Context, completion: @escaping (Timeline<MenuEntry>) -> Void) {
-        let (day, menu, isToday, meal, todayDay, todayMenu, todayMeal) = MenuDataManager.shared.loadMenuForSelectedDay()
-        let currentEntry = MenuEntry(date: Date(), day: day, menu: menu, isToday: isToday, meal: meal, todayDay: todayDay, todayMenu: todayMenu, todayMeal: todayMeal)
+        Task {
+            // Fetch from GitHub and store locally if never fetched or if a new Monday has arrived
+            await MenuDataManager.shared.ensureFreshMenuForCurrentWeek()
 
-        // Automatically refresh at the start of the next meal window, or in 15 minutes
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
-        let timeline = Timeline(entries: [currentEntry], policy: .after(nextUpdate))
-        completion(timeline)
+            let (day, menu, isToday, meal, todayDay, todayMenu, todayMeal) = MenuDataManager.shared.loadMenuForSelectedDay()
+            let currentEntry = MenuEntry(date: Date(), day: day, menu: menu, isToday: isToday, meal: meal, todayDay: todayDay, todayMenu: todayMenu, todayMeal: todayMeal)
+
+            // Automatically refresh at the start of the next meal window, or in 15 minutes
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
+            let timeline = Timeline(entries: [currentEntry], policy: .after(nextUpdate))
+            completion(timeline)
+        }
     }
 }
 
@@ -140,21 +145,21 @@ public struct TodayMessMenuWidget: Widget {
                 selectedMeal: entry.todayMeal,
                 is2x1Mode: true
             )
-        .environment(\.colorScheme, .dark)
-        .containerBackground(for: .widget) {
-            ZStack {
-                Color(red: 16/255, green: 18/255, blue: 22/255)
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.04),
-                        Color.clear,
-                        Color.black.opacity(0.18)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+            .environment(\.colorScheme, .dark)
+            .containerBackground(for: .widget) {
+                ZStack {
+                    Color(red: 16/255, green: 18/255, blue: 22/255)
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.04),
+                            Color.clear,
+                            Color.black.opacity(0.18)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
             }
-        }
         }
         .configurationDisplayName("Today's Mess Menu (2x1)")
         .description("Shows today's meal with side-by-side main & side courses and meal navigation.")
@@ -178,4 +183,3 @@ public struct WeeklyMessMenuWidget: Widget {
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
-

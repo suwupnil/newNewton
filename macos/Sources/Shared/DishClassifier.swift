@@ -15,7 +15,9 @@ public struct DishClassifier {
     // Keywords that automatically classify an item as secondary/side course
     private static let commonKeywords: [String] = [
         "milk", "tea", "coffee", "bread", "chapati", "rice", "salad",
-        "chutney", "ketchup", "rasam", "sambar", "pickle", "curd"
+        "chutney", "ketchup", "rasam", "sambar", "pickle", "curd",
+        "fruit", "fruits", "watermelon", "banana", "papaya", "apple", "melon",
+        "cornflakes", "chocos", "sprouts", "muesli", "oats"
     ]
 
     public static func isSideCourse(_ item: String) -> Bool {

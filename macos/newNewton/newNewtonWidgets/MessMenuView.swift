@@ -40,48 +40,60 @@ public struct MessMenuView: View {
 
             mealHeaderView
 
-            // Main Content Area with Side Meal Icons Rail
-            HStack(alignment: .top, spacing: 10) {
+            // Main Content Area with Vertically Centered Side Meal Icons Rail
+            HStack(alignment: .center, spacing: 10) {
                 // Two-column course list (Main Course ~44% | Side Course ~56%)
                 courseColumnsView
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-                // Vertical Divider separating courses from side rail
-                Rectangle()
-                    .fill(Color.white.opacity(0.10))
-                    .frame(width: 1)
-                    .padding(.vertical, 2)
-
-                // Side Meal Icons Rail (Interactive direct meal switcher)
+                // Side Meal Icons Rail (Interactive direct meal switcher, vertically centered)
                 mealIconsRail
+                    .frame(maxHeight: .infinity, alignment: .center)
             }
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: day)
-        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: selectedMeal)
+        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: day)
+        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: selectedMeal)
     }
 
     // MARK: - Native macOS Segmented Bar for Days (2x2 Widget)
     private var daySegmentedBar: some View {
         let todayDay = DayOfWeek.from(date: currentDate)
+        let allDays = DayOfWeek.allCases
+        let spacing: CGFloat = 2
 
-        return HStack(spacing: 2) {
-            ForEach(DayOfWeek.allCases) { d in
+        return HStack(spacing: spacing) {
+            ForEach(allDays) { d in
                 let isSelected = (d == day)
                 let isDayToday = (d == todayDay)
 
                 daySegmentButton(for: d, isSelected: isSelected, isToday: isDayToday)
             }
         }
-        .padding(2.5)
+        .background(alignment: .leading) {
+            GeometryReader { geo in
+                let count = CGFloat(allDays.count)
+                let totalSpacing = spacing * (count - 1)
+                let segmentWidth = max(0, (geo.size.width - totalSpacing) / count)
+                let selectedIndex = CGFloat(allDays.firstIndex(of: day) ?? 0)
+                let xOffset = selectedIndex * (segmentWidth + spacing)
+
+                Capsule()
+                    .fill(Color.white.opacity(0.18))
+                    .frame(width: segmentWidth, height: geo.size.height)
+                    .offset(x: xOffset)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.82), value: day)
+            }
+        }
+        .padding(3)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            Capsule()
                 .fill(Color.white.opacity(0.06))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            Capsule()
                 .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
         )
     }
@@ -104,26 +116,12 @@ public struct MessMenuView: View {
     }
 
     private func daySegmentContent(for d: DayOfWeek, isSelected: Bool, isToday: Bool) -> some View {
-        VStack(spacing: 2) {
-            Text(d.abbreviation)
-                .font(.system(size: 11.5, weight: isSelected ? .bold : .medium, design: .rounded))
-                .foregroundStyle(isSelected ? Color.white : (isToday ? NewtonTheme.orange : Color.white.opacity(0.65)))
-
-            Circle()
-                .fill(isToday ? (isSelected ? Color.white : NewtonTheme.orange) : Color.clear)
-                .frame(width: 3.5, height: 3.5)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isSelected ? Color.white.opacity(0.18) : Color.clear)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(isSelected ? Color.white.opacity(0.25) : Color.clear, lineWidth: 0.5)
-        )
-        .contentShape(Rectangle())
+        Text(d.abbreviation)
+            .font(.system(size: 11.5, weight: isSelected ? .bold : .medium, design: .rounded))
+            .foregroundStyle(isSelected ? Color.white : (isToday ? NewtonTheme.orange : Color.white.opacity(0.65)))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 5)
+            .contentShape(Capsule())
     }
 
     // MARK: - Meal Header (Title Case + SF Symbol + Timing Metadata)
@@ -171,14 +169,27 @@ public struct MessMenuView: View {
         }
     }
 
-    // MARK: - Side Meal Icons Rail (Direct 1-Click Switcher)
+    // MARK: - Side Meal Icons Rail (Direct 1-Click Switcher with Smooth Gliding Indicator)
     private var mealIconsRail: some View {
-        VStack(spacing: 5) {
-            ForEach(MealType.allCases) { m in
+        let allMeals = MealType.allCases
+        let itemSize: CGFloat = 26
+        let spacing: CGFloat = 5
+        let selectedIndex = CGFloat(allMeals.firstIndex(of: selectedMeal) ?? 0)
+        let yOffset = selectedIndex * (itemSize + spacing)
+
+        return VStack(spacing: spacing) {
+            ForEach(allMeals) { m in
                 let isSelected = (m == selectedMeal)
 
                 mealIconButton(for: m, isSelected: isSelected)
             }
+        }
+        .background(alignment: .top) {
+            Circle()
+                .fill(selectedMeal.accentColor.opacity(0.24))
+                .frame(width: itemSize, height: itemSize)
+                .offset(y: yOffset)
+                .animation(.spring(response: 0.3, dampingFraction: 0.82), value: selectedMeal)
         }
         .padding(.horizontal, 1)
     }
@@ -202,19 +213,15 @@ public struct MessMenuView: View {
 
     private func mealIconContent(for m: MealType, isSelected: Bool) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isSelected ? m.accentColor.opacity(0.24) : Color.white.opacity(0.05))
+            Circle()
+                .fill(Color.white.opacity(0.05))
                 .frame(width: 26, height: 26)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(isSelected ? m.accentColor.opacity(0.70) : Color.white.opacity(0.06), lineWidth: isSelected ? 1 : 0.5)
-                )
 
             Image(systemName: m.iconName)
                 .font(.system(size: 11.5, weight: isSelected ? .bold : .medium))
                 .foregroundStyle(isSelected ? m.accentColor : Color.white.opacity(0.40))
         }
-        .contentShape(Rectangle())
+        .contentShape(Circle())
     }
 
     // MARK: - Course Columns (Main Course ~44% | Side Course ~56%)
@@ -243,7 +250,7 @@ public struct MessMenuView: View {
     // MARK: - Main Course Column (Clean Typography, No Bullets)
     @ViewBuilder
     private func mainCourseColumn(classified: (mainCourse: [String], sideCourse: [String])) -> some View {
-        let maxAllowed = is2x1Mode ? 4 : 7
+        let maxAllowed = is2x1Mode ? 4 : 11
         let totalCount = classified.mainCourse.count
         let showMore = totalCount > maxAllowed
         let visibleCount = showMore ? (maxAllowed - 1) : totalCount
@@ -300,7 +307,7 @@ public struct MessMenuView: View {
     // MARK: - Side Course Column (Daily Staples, Clean Typography, No Bullets)
     @ViewBuilder
     private func sideCourseColumn(classified: (mainCourse: [String], sideCourse: [String])) -> some View {
-        let maxAllowed = is2x1Mode ? 4 : 7
+        let maxAllowed = is2x1Mode ? 4 : 11
         let totalCount = classified.sideCourse.count
         let showMore = totalCount > maxAllowed
         let visibleCount = showMore ? (maxAllowed - 1) : totalCount

@@ -223,6 +223,9 @@ body::-webkit-scrollbar-thumb {
 }
 
 .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   font-weight: 650;
   background-color: var(--brand-light);
@@ -231,6 +234,59 @@ body::-webkit-scrollbar-thumb {
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.badge-update-available {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(234, 88, 12, 0.25));
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  animation: pulse-badge 2s infinite ease-in-out;
+  padding: 2px 8px;
+}
+
+html.theme-light .badge-update-available {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa);
+  color: #b45309;
+  border: 1px solid #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+}
+
+.badge-update-available:hover {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.55);
+  border-color: #f59e0b;
+}
+
+.badge-update-icon {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  flex-shrink: 0;
+  animation: bounce-download 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.65);
+  }
+}
+
+@keyframes bounce-download {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1.5px);
+  }
 }
 
 /* Top 4-Part Navbar */

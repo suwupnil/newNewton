@@ -95,16 +95,16 @@ public enum MealType: String, CaseIterable, Identifiable, Sendable {
         case .breakfast: return "cup.and.saucer.fill"
         case .lunch: return "fork.knife"
         case .snacks: return "mug.fill"
-        case .dinner: return "takeoutbag.and.cup.and.straw.fill"
+        case .dinner: return "moon.stars.fill"
         }
     }
 
     public var emoji: String {
         switch self {
-        case .breakfast: return "🍳"
-        case .lunch: return "🍛"
-        case .snacks: return "☕️"
-        case .dinner: return "🍲"
+        case .breakfast: return "叉"
+        case .lunch: return "惚"
+        case .snacks: return "笘包ｸ
+        case .dinner: return "佐"
         }
     }
 
