@@ -32,13 +32,14 @@ import {
   secondsToSliderPos,
   computeQuestionDelay
 } from './quiz-client.js';
+import { MESS_SPEC, isSecondaryDish } from './generated-specs.js';
 
 
 // ========================================================
 // 1. CONSTANTS & DEFINITIONS
 // ========================================================
 
-const MENU_GITHUB_URL = 'https://raw.githubusercontent.com/suwupnil/newNewton/refs/heads/main/menu.json';
+const MENU_REMOTE_URL = MESS_SPEC.menuRemoteUrl || 'https://ru-print.vercel.app';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -146,29 +147,7 @@ const FALLBACK_MENU = {
  * Classifies an item as a secondary (daily mundane staple) or special dish.
  */
 function isSecondaryItem(item) {
-  if (!item) return false;
-
-  const name = item.toLowerCase();
-
-  // List of specific common items from the source code
-  const commonItems = new Set([
-    "hot milk", "cold milk", "tea", "coffee powder", "cold coffee",
-    "bread", "butter", "jam", "bread/butter/jam", "green salad",
-    "tossed salad", "cucumber salad", "onion lachha", "laccha pyaaz",
-    "chana sprout salad", "moong sprout salad", "cucumber-carrot salad",
-    "ketchup", "chutney", "green chutney", "pickle", "curd",
-    "sambar", "rasam", "chapati", "rice", "plain rice",
-    "steamed rice", "jeera rice", "ghee rice", "dum pulao sada"
-  ]);
-
-  // List of keywords that automatically categorize an item as secondary
-  const commonKeywords = ["milk", "tea", "bread", "chapati", "rice", "salad", "chutney", "ketchup", "rasam", "sambar"];
-
-  // Check for exact match in the set
-  if (commonItems.has(name)) return true;
-
-  // Check if the item name includes any of the common keywords
-  return commonKeywords.some(keyword => name.includes(keyword));
+  return isSecondaryDish(item);
 }
 
 // ========================================================
@@ -399,26 +378,72 @@ function isCacheExpired(lastFetched) {
 }
 
 /**
- * Fetches menu from GitHub raw JSON and persists to chrome.storage.local.
+ * Fetches menu by scraping the Next.js bundle on ru-print.vercel.app and persists to chrome.storage.local.
  */
 async function fetchMenuFromUpstream() {
   try {
-    const response = await fetch(MENU_GITHUB_URL, { cache: 'no-cache' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    const origin = MENU_REMOTE_URL.replace(/\/+$/, '');
+    const htmlRes = await fetch(origin, { cache: 'no-cache' });
+    if (!htmlRes.ok) {
+      throw new Error(`HTML fetch failed: HTTP ${htmlRes.status}`);
     }
-    const data = await response.json();
-    if (data && data.Monday && data.Tuesday) {
+    const html = await htmlRes.text();
+    const chunkMatch = html.match(/\/static\/chunks\/app\/page-[a-f0-9]+\.js/);
+    if (!chunkMatch) {
+      throw new Error('Could not find Next.js page chunk in HTML');
+    }
+
+    const chunkUrl = `${origin}/_next${chunkMatch[0]}`;
+    const jsRes = await fetch(chunkUrl, { cache: 'no-cache' });
+    if (!jsRes.ok) {
+      throw new Error(`JS chunk fetch failed: HTTP ${jsRes.status}`);
+    }
+    const js = await jsRes.text();
+
+    const startStr = "j={Monday:{breakfast:[";
+    let startObjIdx = js.indexOf(startStr);
+    if (startObjIdx !== -1) {
+      startObjIdx += 2;
+    } else {
+      const pattern = /Monday\s*:\s*\{\s*breakfast\s*:\s*\[/;
+      const m = js.match(pattern);
+      if (!m) throw new Error('Monday menu signature not found in JS chunk');
+      startObjIdx = js.lastIndexOf('{', m.index);
+    }
+
+    let depth = 0;
+    let endIdx = -1;
+    for (let i = startObjIdx; i < js.length; i++) {
+      const ch = js[i];
+      if (ch === '{' || ch === '[') {
+        depth++;
+      } else if (ch === '}' || ch === ']') {
+        depth--;
+        if (depth === 0) {
+          endIdx = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (endIdx === -1) {
+      throw new Error('Could not balance JSON braces in JS chunk');
+    }
+
+    const rawObjStr = js.slice(startObjIdx, endIdx);
+    const fullMenu = Function(`return (${rawObjStr})`)();
+
+    if (fullMenu && fullMenu.Monday && fullMenu.Tuesday) {
       const timestamp = Date.now();
       await chrome.storage.local.set({
-        mess_menu_data: data,
+        mess_menu_data: fullMenu,
         mess_menu_last_fetched: timestamp
       });
-      return { data, timestamp };
+      return { data: fullMenu, timestamp };
     }
-    throw new Error('Invalid JSON format');
+    throw new Error('Extracted menu missing days');
   } catch (err) {
-    console.warn('[newNewton] Upstream menu fetch failed:', err);
+    console.warn('[newNewton] ru-print menu fetch failed:', err);
     return null;
   }
 }
@@ -454,7 +479,7 @@ async function loadMenuData(forceRefresh = false) {
       renderSelectedDayMenu();
       updateMenuStatusDisplay(upstreamResult.timestamp);
       if (forceRefresh) {
-        showStatus('Menu refreshed from GitHub');
+        showStatus('Menu refreshed from ru-print');
       }
     } else if (!hasCachedData) {
       // Offline first-run fallback
@@ -769,6 +794,39 @@ telemetryToggle?.addEventListener('change', async () => {
 
   await notifyActiveTabTelemetry(isBlocked);
   showStatus(isBlocked ? 'Telemetry blocking enabled' : 'Telemetry blocking disabled');
+});
+
+// Copy Auth Token Button (for macOS App & Widgets)
+const btnCopyAuthToken = document.getElementById('btnCopyAuthToken');
+const btnCopyAuthTokenLabel = document.getElementById('btnCopyAuthTokenLabel');
+btnCopyAuthToken?.addEventListener('click', async () => {
+  try {
+    const creds = await getPortalAuthCredentials();
+    let token = creds?.token || null;
+    if (!token && typeof chrome !== 'undefined' && chrome.cookies) {
+      try {
+        const cookie = await chrome.cookies.get({
+          url: 'https://my.newtonschool.co',
+          name: 'access_token_ns_student_web'
+        });
+        if (cookie?.value) token = cookie.value;
+      } catch (e) {}
+    }
+    if (!token) {
+      showStatus('No token found — log in at my.newtonschool.co first', false);
+      return;
+    }
+    await navigator.clipboard.writeText(token);
+    btnCopyAuthToken.classList.add('copied');
+    if (btnCopyAuthTokenLabel) btnCopyAuthTokenLabel.textContent = 'Copied!';
+    showStatus('Auth token copied to clipboard!');
+    setTimeout(() => {
+      btnCopyAuthToken.classList.remove('copied');
+      if (btnCopyAuthTokenLabel) btnCopyAuthTokenLabel.textContent = 'Copy Token';
+    }, 2200);
+  } catch (err) {
+    showStatus('Failed to copy auth token', false);
+  }
 });
 
 // System Theme change listener

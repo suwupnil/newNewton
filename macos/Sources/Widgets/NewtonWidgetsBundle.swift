@@ -1,5 +1,5 @@
 //
-//  newNewtonWidgetsBundle.swift
+//  NewtonWidgetsBundle.swift
 //  newNewtonWidgets
 //
 //  Created by Swapnil Pradhan on 18/10/26.
@@ -13,5 +13,6 @@ struct newNewtonWidgetsBundle: WidgetBundle {
     var body: some Widget {
         TodayMessMenuWidget()
         WeeklyMessMenuWidget()
+        AttendanceWidget()
     }
 }

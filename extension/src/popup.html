@@ -149,6 +149,26 @@
             </div>
           </div>
         </div>
+
+        <!-- Portal Auth Token Card (macOS App & Widget Sync) -->
+        <div class="card token-card">
+          <div class="card-header-row token-row">
+            <div class="privacy-header-content">
+              <div class="title-row">
+                <span class="card-title">Portal Auth Token</span>
+                <span id="authTokenStatusBadge" class="beta-badge">macOS Sync</span>
+              </div>
+              <p class="card-description">Copy your active Newton session token to connect the macOS app &amp; widgets.</p>
+            </div>
+            <button type="button" id="btnCopyAuthToken" class="btn-copy-token" title="Copy auth-token to clipboard">
+              <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span id="btnCopyAuthTokenLabel">Copy Token</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 2. Mess Menu Tab Pane -->

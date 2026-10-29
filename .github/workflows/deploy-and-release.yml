@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   # =========================================================================
-  # EXTENSION PACKAGING & GITHUB RELEASE (.crx & .zip)
+  # EXTENSION PACKAGING & GITHUB RELEASE (.crx, .zip & .xpi)
   # =========================================================================
   build-and-release-extension:
     name: Package Extension & Publish Release
@@ -19,25 +19,24 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
+      - name: Install Standalone esbuild
+        run: |
+          npm install -g esbuild
 
       - name: Extract Manifest Version
         id: ext_version
         run: |
-          VERSION=$(node -e "console.log(require('./extension/manifest.json').version)")
+          VERSION=$(jq -r '.version' ./extension/manifest.json)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Detected version: v${VERSION}"
 
-      - name: Minify Code & Validate TypeScript / JavaScript
-        run: node scripts/build.js
+      - name: Run Native Build Pipeline
+        run: ./build.sh
 
       - name: Create ZIP Package
         run: |
@@ -57,59 +56,21 @@ jobs:
             echo "Notice: CRX_PRIVATE_KEY secret is not set. Skipping .crx generation."
           fi
 
-      - name: Generate Auto-Update Manifest (updates.xml)
-        env:
-          VERSION: ${{ steps.ext_version.outputs.version }}
-        run: |
-          node -e "
-            const fs = require('fs');
-            const v = process.env.VERSION;
-            const xml = \`<?xml version='1.0' encoding='UTF-8'?>
-            <gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
-              <app appid='colbeijnblfedgifoekbhiflkohipnkp'>
-                <updatecheck codebase='https://github.com/suwupnil/newNewton/releases/latest/download/newNewton.crx' version='\${v}' />
-              </app>
-            </gupdate>
-            \`.trim() + '\n';
-            fs.writeFileSync('updates.xml', xml);
-            fs.writeFileSync('dist/updates.xml', xml);
-          "
-
-      - name: Create or Update GitHub Release
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ steps.ext_version.outputs.version }}"
-          name: "newNewton Release v${{ steps.ext_version.outputs.version }}"
+          name: "newNewton v${{ steps.ext_version.outputs.version }}"
           body: |
-            ### 🚀 newNewton v${{ steps.ext_version.outputs.version }}
-            Automated production build generated from commit `${{ github.sha }}`.
-
-            #### 📦 Downloads:
-            - **`newNewton-v${{ steps.ext_version.outputs.version }}.crx`**: Pre-packaged Chrome extension.
-            - **`newNewton.crx`**: Latest direct package link for auto-updates.
-            - **`newNewton-v${{ steps.ext_version.outputs.version }}.zip`**: Unpacked extension directory for Developer Mode loading.
-            - **`updates.xml`**: Chrome Autoupdate Manifest.
-
-            #### 🛠️ Installation & Auto-Updates:
-            1. Download `newNewton.crx` or extract `newNewton-v${{ steps.ext_version.outputs.version }}.zip`.
-            2. In Chrome, open `chrome://extensions/`.
-            3. Enable **Developer mode** in the top-right corner.
-            4. Drag & drop the `.crx` file onto the page.
-            5. Future updates will be checked and installed automatically via `updates.xml`!
+            Automated production build for newNewton v${{ steps.ext_version.outputs.version }}.
+            - Chrome Extension (.crx, .zip)
+            - Mozilla Firefox Extension (.xpi)
+            - macOS Safari Web Extension Bundle
           files: |
             dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip
-            dist/newNewton-v*.crx
             dist/newNewton.crx
-            dist/updates.xml
+            dist/newNewton-firefox.xpi
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Sync updates.xml to main branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add updates.xml
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: sync updates.xml to v${{ steps.ext_version.outputs.version }} [skip ci]"
-            git push origin main
-          fi

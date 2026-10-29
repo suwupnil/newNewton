@@ -12,6 +12,8 @@ import {
   submitQuizWithSupabaseSolutions
 } from './quiz-client.js';
 
+const chrome = globalThis.chrome || globalThis.browser;
+
 const RULE_ID_OFFSET = 1000;
 
 const TELEMETRY_FILTERS = [

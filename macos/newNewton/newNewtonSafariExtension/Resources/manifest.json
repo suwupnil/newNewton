@@ -1,0 +1,81 @@
+{
+  "manifest_version": 3,
+  "name": "newNewton",
+  "version": "1.2.2",
+  "description": "UX Enhancer for Newton School - Native Grauity Theme Switcher, Telemetry Blocker and Supabase Solution Archiver",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "scripting",
+    "cookies",
+    "notifications",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://my.newtonschool.co/*",
+    "https://*.newtonschool.co/*",
+    "https://raw.githubusercontent.com/*",
+    "https://api.github.com/*",
+    "https://ru-print.vercel.app/*",
+    "https://*.supabase.co/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ],
+    "type": "module",
+    "persistent": false
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://my.newtonschool.co/*",
+        "https://*.newtonschool.co/*"
+      ],
+      "js": [
+        "telemetry-blocker.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://my.newtonschool.co/*",
+        "https://*.newtonschool.co/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "telemetry-blocker.js",
+        "icon16.png",
+        "icon48.png",
+        "icon128.png"
+      ],
+      "matches": [
+        "https://my.newtonschool.co/*",
+        "https://*.newtonschool.co/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

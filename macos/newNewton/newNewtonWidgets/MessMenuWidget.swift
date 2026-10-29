@@ -114,18 +114,7 @@ public struct MessMenuWidgetEntryView: View {
         }
         .environment(\.colorScheme, .dark)
         .containerBackground(for: .widget) {
-            ZStack {
-                Color(red: 16/255, green: 18/255, blue: 22/255)
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.04),
-                        Color.clear,
-                        Color.black.opacity(0.18)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
+            widgetDarkBackground
         }
     }
 }
@@ -147,18 +136,7 @@ public struct TodayMessMenuWidget: Widget {
             )
             .environment(\.colorScheme, .dark)
             .containerBackground(for: .widget) {
-                ZStack {
-                    Color(red: 16/255, green: 18/255, blue: 22/255)
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.04),
-                            Color.clear,
-                            Color.black.opacity(0.18)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                }
+                widgetDarkBackground
             }
         }
         .configurationDisplayName("Today's Mess Menu (2x1)")
@@ -181,5 +159,93 @@ public struct WeeklyMessMenuWidget: Widget {
         .description("Weekly mess menu with day pills, side-by-side main & side courses, and meal navigation.")
         .contentMarginsDisabled()
         .supportedFamilies([.systemMedium, .systemLarge])
+    }
+}
+
+// MARK: - Attendance Widget Provider & Configuration
+public struct AttendanceEntry: TimelineEntry {
+    public let date: Date
+    public let snapshot: AttendanceSnapshot
+
+    public init(date: Date, snapshot: AttendanceSnapshot) {
+        self.date = date
+        self.snapshot = snapshot
+    }
+}
+
+public struct AttendanceProvider: TimelineProvider {
+    public init() {}
+
+    public func placeholder(in context: Context) -> AttendanceEntry {
+        AttendanceEntry(date: Date(), snapshot: .sample(target: PortalDataManager.shared.attendanceTarget))
+    }
+
+    public func getSnapshot(in context: Context, completion: @escaping (AttendanceEntry) -> Void) {
+        let snap = PortalDataManager.shared.loadAttendanceSnapshot()
+        completion(AttendanceEntry(date: Date(), snapshot: snap))
+    }
+
+    public func getTimeline(in context: Context, completion: @escaping (Timeline<AttendanceEntry>) -> Void) {
+        Task {
+            if PortalDataManager.shared.hasAuthToken {
+                _ = await PortalDataManager.shared.fetchLiveAttendance()
+            }
+            let snap = PortalDataManager.shared.loadAttendanceSnapshot()
+            let entry = AttendanceEntry(date: Date(), snapshot: snap)
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date().addingTimeInterval(1800)
+            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+        }
+    }
+}
+
+public struct AttendanceWidgetEntryView: View {
+    @Environment(\.widgetFamily) var family
+    var entry: AttendanceEntry
+
+    public init(entry: AttendanceEntry) {
+        self.entry = entry
+    }
+
+    public var body: some View {
+        AttendanceWidgetView(
+            snapshot: entry.snapshot,
+            isCompactMode: family == .systemMedium
+        )
+        .environment(\.colorScheme, .dark)
+        .containerBackground(for: .widget) {
+            widgetDarkBackground
+        }
+    }
+}
+
+public struct AttendanceWidget: Widget {
+    public let kind: String = "com.newton.enhancer.widget.attendance"
+
+    public init() {}
+
+    public var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: AttendanceProvider()) { entry in
+            AttendanceWidgetEntryView(entry: entry)
+        }
+        .configurationDisplayName("Newton Attendance Tracker")
+        .description("Live subject attendance with Theory + Lab rollup, target switcher (75% / 80% / 85%), and skip budget.")
+        .contentMarginsDisabled()
+        .supportedFamilies([.systemMedium, .systemLarge])
+    }
+}
+
+// MARK: - Shared Dark Widget Background
+private var widgetDarkBackground: some View {
+    ZStack {
+        Color(red: 16/255, green: 18/255, blue: 22/255)
+        LinearGradient(
+            colors: [
+                Color.white.opacity(0.04),
+                Color.clear,
+                Color.black.opacity(0.18)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }

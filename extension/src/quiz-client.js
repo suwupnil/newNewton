@@ -12,11 +12,12 @@
  */
 
 import { groupUnits, componentLabel, parseCourseName, normalizeKey } from './attendance/grouping.js';
+import { PLATFORM_CONFIG, COURSE_ALIASES } from './generated-specs.js';
 
 export const SUPABASE_CONFIG = {
-  url: 'https://wwxqskccvcpimcgctskm.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3eHFza2NjdmNwaW1jZ2N0c2ttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MjM2MjgsImV4cCI6MjEwNzI5OTYyOH0.uEXGkzcIXbqyU5lRnFVyAF0c04YI0SoED6p98EYrbcc',
-  edgeFunctionUrl: 'https://wwxqskccvcpimcgctskm.supabase.co/functions/v1/sync-quizzes'
+  url: PLATFORM_CONFIG.supabaseUrl,
+  anonKey: PLATFORM_CONFIG.supabaseAnonKey,
+  edgeFunctionUrl: PLATFORM_CONFIG.supabaseEdgeFunctionUrl
 };
 
 /**
@@ -75,24 +76,9 @@ export function extractShortCourseName(rawName) {
   // Strip practical / lab markers: "Lab 1", "Practical 2"
   s = s.replace(/\s*[-–—:]?\s*\b(Labs?|Practicals?|Pracs?|Tutorials?|Tuts?|Workshops?)\b\s*\d*$/i, '').trim();
 
-  const KNOWN_SHORTS = {
-    'problem solving and programming': 'PSP',
-    'problem solving & programming': 'PSP',
-    'system and ai essentials': 'S&AI',
-    'system & ai essentials': 'S&AI',
-    'systems and ai essentials': 'S&AI',
-    'systems & ai essentials': 'S&AI',
-    'mathematics-i': 'Maths I',
-    'mathematics i': 'Maths I',
-    'mathematics-1': 'Maths I',
-    'mathematics 1': 'Maths I',
-    'maths-i': 'Maths I',
-    'maths i': 'Maths I'
-  };
-
   const lower = s.toLowerCase();
-  if (KNOWN_SHORTS[lower]) {
-    return KNOWN_SHORTS[lower];
+  if (COURSE_ALIASES[lower]) {
+    return COURSE_ALIASES[lower];
   }
 
   return s;

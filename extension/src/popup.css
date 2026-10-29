@@ -2554,4 +2554,52 @@ details.missed-details[open] .chevron-icon {
   line-height: 1.4;
 }
 
+/* ========================================================
+   PORTAL AUTH TOKEN COPY CARD (UTILITIES TAB)
+   ======================================================== */
+.token-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+  gap: 10px;
+}
+
+.btn-copy-token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 650;
+  border-radius: var(--radius-sm);
+  background-color: var(--brand-light);
+  color: var(--brand-primary);
+  border: 1px solid rgba(6, 115, 249, 0.25);
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-copy-token:hover {
+  background-color: var(--brand-primary);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-copy-token.copied {
+  background-color: var(--success-light);
+  color: var(--success-color);
+  border-color: rgba(19, 185, 124, 0.35);
+}
+
+.copy-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+
 

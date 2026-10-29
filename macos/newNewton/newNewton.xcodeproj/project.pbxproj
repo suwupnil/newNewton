@@ -10,6 +10,8 @@
 		573F7A0B3084FBBF006D7750 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 573F7A0A3084FBBF006D7750 /* WidgetKit.framework */; };
 		573F7A0D3084FBBF006D7750 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 573F7A0C3084FBBF006D7750 /* SwiftUI.framework */; };
 		573F7A183084FBC1006D7750 /* newNewtonWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 573F7A083084FBBF006D7750 /* newNewtonWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		573F7A283084FBC1006D7750 /* newNewtonSafariExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 573F7A213084FBC1006D7750 /* newNewtonSafariExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		573F7A2B3084FBC1006D7750 /* SafariServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 573F7A2A3084FBC1006D7750 /* SafariServices.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,6 +22,13 @@
 			remoteGlobalIDString = 573F7A073084FBBF006D7750;
 			remoteInfo = newNewtonWidgetsExtension;
 		};
+		573F7A263084FBC1006D7750 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 573F7A203084FBC1006D7750;
+			remoteInfo = newNewtonSafariExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,6 +38,7 @@
 			dstSubfolder = PlugIns;
 			files = (
 				573F7A183084FBC1006D7750 /* newNewtonWidgetsExtension.appex in Embed Foundation Extensions */,
+				573F7A283084FBC1006D7750 /* newNewtonSafariExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 		};
@@ -39,6 +49,8 @@
 		573F7A083084FBBF006D7750 /* newNewtonWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = newNewtonWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		573F7A0A3084FBBF006D7750 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		573F7A0C3084FBBF006D7750 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
+		573F7A213084FBC1006D7750 /* newNewtonSafariExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = newNewtonSafariExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		573F7A2A3084FBC1006D7750 /* SafariServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SafariServices.framework; path = /System/Library/Frameworks/SafariServices.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -48,6 +60,13 @@
 				Info.plist,
 			);
 			target = 573F7A073084FBBF006D7750 /* newNewtonWidgetsExtension */;
+		};
+		573F7A2C3084FBC1006D7750 /* Exceptions for "newNewtonSafariExtension" folder in "newNewtonSafariExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 573F7A203084FBC1006D7750 /* newNewtonSafariExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -65,6 +84,14 @@
 			path = newNewtonWidgets;
 			sourceTree = "<group>";
 		};
+		573F7A223084FBC1006D7750 /* newNewtonSafariExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				573F7A2C3084FBC1006D7750 /* Exceptions for "newNewtonSafariExtension" folder in "newNewtonSafariExtension" target */,
+			);
+			path = newNewtonSafariExtension;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +107,12 @@
 				573F7A0B3084FBBF006D7750 /* WidgetKit.framework in Frameworks */,
 			);
 		};
+		573F7A243084FBC1006D7750 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				573F7A2B3084FBC1006D7750 /* SafariServices.framework in Frameworks */,
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -88,6 +121,7 @@
 			children = (
 				000000000000000000000010 /* newNewton */,
 				573F7A0E3084FBBF006D7750 /* newNewtonWidgets */,
+				573F7A223084FBC1006D7750 /* newNewtonSafariExtension */,
 				573F7A093084FBBF006D7750 /* Frameworks */,
 				000000000000000000000020 /* Products */,
 			);
@@ -98,6 +132,7 @@
 			children = (
 				000000000000000000000120 /* newNewton.app */,
 				573F7A083084FBBF006D7750 /* newNewtonWidgetsExtension.appex */,
+				573F7A213084FBC1006D7750 /* newNewtonSafariExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -107,6 +142,7 @@
 			children = (
 				573F7A0A3084FBBF006D7750 /* WidgetKit.framework */,
 				573F7A0C3084FBBF006D7750 /* SwiftUI.framework */,
+				573F7A2A3084FBC1006D7750 /* SafariServices.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -127,6 +163,7 @@
 			);
 			dependencies = (
 				573F7A173084FBC1006D7750 /* PBXTargetDependency */,
+				573F7A273084FBC1006D7750 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				000000000000000000000010 /* newNewton */,
@@ -154,6 +191,24 @@
 			productReference = 573F7A083084FBBF006D7750 /* newNewtonWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		573F7A203084FBC1006D7750 /* newNewtonSafariExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 573F7A2F3084FBC1006D7750 /* Build configuration list for PBXNativeTarget "newNewtonSafariExtension" */;
+			buildPhases = (
+				573F7A233084FBC1006D7750 /* Sources */,
+				573F7A243084FBC1006D7750 /* Frameworks */,
+				573F7A253084FBC1006D7750 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				573F7A223084FBC1006D7750 /* newNewtonSafariExtension */,
+			);
+			name = newNewtonSafariExtension;
+			productName = newNewtonSafariExtension;
+			productReference = 573F7A213084FBC1006D7750 /* newNewtonSafariExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -168,6 +223,9 @@
 						CreatedOnToolsVersion = 26.3;
 					};
 					573F7A073084FBBF006D7750 = {
+						CreatedOnToolsVersion = 27.1;
+					};
+					573F7A203084FBC1006D7750 = {
 						CreatedOnToolsVersion = 27.1;
 					};
 				};
@@ -188,6 +246,7 @@
 			targets = (
 				000000000000000100000000 /* newNewton */,
 				573F7A073084FBBF006D7750 /* newNewtonWidgetsExtension */,
+				573F7A203084FBC1006D7750 /* newNewtonSafariExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -199,6 +258,11 @@
 			);
 		};
 		573F7A063084FBBF006D7750 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		573F7A253084FBC1006D7750 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -216,6 +280,11 @@
 			files = (
 			);
 		};
+		573F7A233084FBC1006D7750 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -223,6 +292,11 @@
 			isa = PBXTargetDependency;
 			target = 573F7A073084FBBF006D7750 /* newNewtonWidgetsExtension */;
 			targetProxy = 573F7A163084FBC1006D7750 /* PBXContainerItemProxy */;
+		};
+		573F7A273084FBC1006D7750 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 573F7A203084FBC1006D7750 /* newNewtonSafariExtension */;
+			targetProxy = 573F7A263084FBC1006D7750 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -371,7 +445,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Campus Mess Menu";
+				INFOPLIST_KEY_CFBundleDisplayName = newNewton;
 				INFOPLIST_KEY_LSUIElement = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -385,7 +459,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = new.newton;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -411,7 +485,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Campus Mess Menu";
+				INFOPLIST_KEY_CFBundleDisplayName = newNewton;
 				INFOPLIST_KEY_LSUIElement = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -425,7 +499,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = new.newton;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -452,7 +526,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = newNewtonWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Campus Mess Menu";
+				INFOPLIST_KEY_CFBundleDisplayName = "newNewton Widgets";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -466,7 +540,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = new.newton.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -493,7 +567,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = newNewtonWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Campus Mess Menu";
+				INFOPLIST_KEY_CFBundleDisplayName = "newNewton Widgets";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -507,7 +581,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = new.newton.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -520,6 +594,86 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
+		573F7A2D3084FBC1006D7750 /* Debug configuration for PBXNativeTarget "newNewtonSafariExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = newNewtonSafariExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "newNewton Safari Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.2.2;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "new.newton.safari-extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		573F7A2E3084FBC1006D7750 /* Release configuration for PBXNativeTarget "newNewtonSafariExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = newNewtonSafariExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "newNewton Safari Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.2.2;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "new.newton.safari-extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -547,6 +701,14 @@
 			buildConfigurations = (
 				573F7A1A3084FBC1006D7750 /* Debug configuration for PBXNativeTarget "newNewtonWidgetsExtension" */,
 				573F7A1B3084FBC1006D7750 /* Release configuration for PBXNativeTarget "newNewtonWidgetsExtension" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		573F7A2F3084FBC1006D7750 /* Build configuration list for PBXNativeTarget "newNewtonSafariExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				573F7A2D3084FBC1006D7750 /* Debug configuration for PBXNativeTarget "newNewtonSafariExtension" */,
+				573F7A2E3084FBC1006D7750 /* Release configuration for PBXNativeTarget "newNewtonSafariExtension" */,
 			);
 			defaultConfigurationName = Release;
 		};

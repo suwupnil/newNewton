@@ -30,22 +30,26 @@ rm -rf "${APP_DIR}"
 mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}" "${EXTENSION_MACOS_DIR}" "${EXTENSION_RESOURCES_DIR}"
 
 # 2. Copy Plists and Resources
-echo "📄 Copying Info.plist and menu.json resources..."
+echo "📄 Copying Info.plist resources..."
 cp "${SCRIPT_DIR}/Resources/App-Info.plist" "${CONTENTS_DIR}/Info.plist"
 cp "${SCRIPT_DIR}/Resources/Extension-Info.plist" "${EXTENSION_CONTENTS_DIR}/Info.plist"
-cp "${SCRIPT_DIR}/Resources/menu.json" "${RESOURCES_DIR}/menu.json"
-cp "${SCRIPT_DIR}/Resources/menu.json" "${EXTENSION_RESOURCES_DIR}/menu.json"
 
 # 3. Source file definitions
 SHARED_SOURCES=(
+    "${SCRIPT_DIR}/Sources/Shared/NewtonSpecs.swift"
+    "${SCRIPT_DIR}/Sources/Shared/NewtonTheme.swift"
+    "${SCRIPT_DIR}/Sources/Shared/DishClassifier.swift"
     "${SCRIPT_DIR}/Sources/Shared/MenuModel.swift"
     "${SCRIPT_DIR}/Sources/Shared/MenuDataManager.swift"
+    "${SCRIPT_DIR}/Sources/Shared/PortalDataManager.swift"
+    "${SCRIPT_DIR}/Sources/Shared/PortalWidgetBridge.swift"
     "${SCRIPT_DIR}/Sources/Shared/DayIntents.swift"
 )
 
 WIDGET_SOURCES=(
     "${SHARED_SOURCES[@]}"
     "${SCRIPT_DIR}/Sources/Widgets/MessMenuView.swift"
+    "${SCRIPT_DIR}/Sources/Widgets/AttendanceWidgetView.swift"
     "${SCRIPT_DIR}/Sources/Widgets/MessMenuWidget.swift"
     "${SCRIPT_DIR}/Sources/Widgets/NewtonWidgetsBundle.swift"
 )
@@ -94,28 +98,6 @@ codesign --force --sign - --entitlements "${SCRIPT_DIR}/Resources/Extension.enti
 codesign --force --sign - --entitlements "${SCRIPT_DIR}/Resources/App.entitlements" "${APP_DIR}"
 
 echo "  ✓ Bundles signed successfully."
-
-# 7. Install to /Applications so macOS chronod / Notification Center discovers the widget
-INSTALL_DIR="/Applications/NewtonEnhancer.app"
-echo "📦 Installing to ${INSTALL_DIR}..."
-pkill -f "NewtonEnhancer" 2>/dev/null || true
-rm -rf "${INSTALL_DIR}"
-cp -R "${APP_DIR}" "${INSTALL_DIR}"
-
-# 8. Register with LaunchServices & refresh widget gallery
-echo "🔄 Registering app and widgets with macOS LaunchServices..."
-if [ -x "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister" ]; then
-    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -R -trusted "${INSTALL_DIR}" || true
-    echo "  ✓ Registered with lsregister."
-fi
-
-echo "🔄 Refreshing Notification Center and WidgetKit daemon..."
-killall NotificationCenter 2>/dev/null || true
-
 echo "=========================================================="
-echo "🎉 Successfully installed to: ${INSTALL_DIR}"
+echo "🎉 Built successfully at: ${APP_DIR}"
 echo "=========================================================="
-
-echo "🚀 Launching app..."
-open "${INSTALL_DIR}"
-

@@ -1,0 +1,20 @@
+{
+  "dark": {
+    "bgPrimary": { "hex": "#16191D", "r": 22, "g": 25, "b": 29 },
+    "bgSecondary": { "hex": "#0B0C0E", "r": 11, "g": 12, "b": 14 },
+    "bgCard": { "hex": "#23282F", "r": 35, "g": 40, "b": 47 },
+    "bgCardSubtle": { "hex": "#1C2026", "r": 28, "g": 32, "b": 38 },
+    "bgHover": { "hex": "#30363D", "r": 48, "g": 54, "b": 61 },
+    "border": { "hex": "#30363D", "r": 48, "g": 54, "b": 61 },
+    "textPrimary": { "hex": "#FFFFFF", "r": 255, "g": 255, "b": 255 },
+    "textSecondary": { "hex": "#B2B9C7", "r": 178, "g": 185, "b": 199 },
+    "textMuted": { "hex": "#8C95A6", "r": 140, "g": 149, "b": 166 },
+    "brandPrimary": { "hex": "#2989FF", "r": 41, "g": 137, "b": 255 },
+    "brandHover": { "hex": "#61A8FF", "r": 97, "g": 168, "b": 255 },
+    "success": { "hex": "#20C997", "r": 32, "g": 201, "b": 151 },
+    "warning": { "hex": "#FBBF24", "r": 251, "g": 191, "b": 36 },
+    "danger": { "hex": "#FF6B6B", "r": 255, "g": 107, "b": 107 },
+    "orange": { "hex": "#FB923C", "r": 251, "g": 146, "b": 60 },
+    "purple": { "hex": "#A78BFA", "r": 167, "g": 139, "b": 250 }
+  }
+}

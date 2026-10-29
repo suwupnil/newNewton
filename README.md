@@ -1,165 +1,142 @@
-# newNewton — Project Summary & Architecture Guide
+# newNewton
 
-A Manifest V3 Chrome extension designed for Newton School (`my.newtonschool.co`) that provides native theme switching between **Light**, **Dark**, and **System** modes, alongside a high-performance **Telemetry, Diagnostic & Tracking Blocker**.
-
----
-
-## 1. Project Overview
-
-Newton School's frontend contains:
-1. An internal **Grauity** design system with a built-in dark theme (`grauity-theme-dark`). However, the platform does not expose an accessible theme toggle to all students, and Next.js client-side page routing frequently strips body classes.
-2. Numerous embedded analytics, session recording, screen capture, diagnostic report uploads, and tracker pixels (Microsoft Clarity, Google Analytics/GTM, Mixpanel, CleverTap, OpenPanel, Sentry/Datadog diagnostic services, and `/api/v1/user/report/` telemetry endpoints).
-
-**newNewton** addresses both needs cleanly:
-- **Native Grauity Theme Switcher**: 3-way toggle (Light / Dark / System) that persists to Newton's native `localStorage` keys and enforces `grauity-theme-dark` / `grauity-theme-light` without injecting any custom CSS overrides.
-- **Privacy & Telemetry Blocker**: Dual-layer blocking protection that stops diagnostic uploads, session recordings, analytics, and third-party trackers with an easy-to-use toggle in the popup UI.
-- **Top 4-Part Navigation**: Modular navbar dividing the extension into Utilities, Mess Menu, Attendance, and Mystery.
-- **Campus Mess Menu**: Weekly live mess menu fetched from GitHub raw JSON with Monday auto-refresh, smart specials vs staples classification, 7-day selector, and real-time meal detection ("Serving Now" / "Next Up").
+Campus companion & UX enhancer for Newton School of Technology. Multi-platform extension, native macOS WidgetKit suite, and clean-room LMS sync engine.
 
 ---
 
-## 2. Architecture & File Structure
+## Highlights
+
+- **Native Grauity Theme Switcher** — Seamless 3-way toggle (Light / Dark / System) respecting Newton's internal Grauity design tokens without CSS injections. Next.js transition-resistant.
+- **Privacy & Telemetry Blocker** — Dual-layer protection (Manifest V3 `declarativeNetRequest` + main-world proxy stubs) stopping Sentry, Clarity, Mixpanel, and telemetry tracking without breaking single-page app state.
+- **Campus Mess Menu** — Real-time weekly menu with Monday auto-refresh, smart course separation (Main Course vs Side Course staples), live meal detection (`Serving Now` / `Next Up`), and a 7-day selector.
+- **LMS Attendance Engine** — Rollup analytics, Theory + Lab course pairings, live 75% / 80% / 85% safety targets, skip budgets, and recovery streaks with missed class breakdowns.
+- **Live Mystery Quizzes** — Unsubmitted quiz explorer, lecture/lab splits, clean-room answer syncing via Supabase Edge Functions, and human-paced Lazy Submit mode.
+- **macOS WidgetKit Suite** — Native interactive desktop widgets (`1x1`, `2x1`, `2x2` Mess Menus, Attendance, and Mystery Quizzes) with gliding fluid pill bars and instant app-group token handoff.
+
+---
+
+## Architecture
+
+newNewton is powered by a **Zero-Overhead Single-Spec Codegen Architecture**. All cross-platform constants—meal windows, course aliases, attendance heuristics, and design tokens—live in a single declarative specification directory.
 
 ```text
-/Users/swap/Developer/newton-enhancer/
-├── README.md                      # Project README & user guide
-├── menu.json                      # Reference campus mess menu
-├── updates.xml                    # Chrome auto-update manifest (Google Update Protocol 2.0)
-├── supabase/                      # Supabase schema & setup guide (AWS Mumbai ap-south-1)
-│   ├── schema.sql                 # PostgreSQL tables & RLS policies
-│   └── README.md                  # Supabase quickstart guide
-└── extension/                     # Chrome Extension (Load Unpacked)
-    ├── manifest.json              # Chrome MV3 configuration, permissions, & content scripts
-    └── src/
-        ├── background.js          # Background service worker: declarativeNetRequest dynamic rules
-        ├── quiz-client.js         # Supabase PostgREST client & quiz extraction engine
-        ├── telemetry-blocker.js   # Main-world script: crash-proof stubs & beacon/fetch/XHR interceptors
-        ├── content.js             # Isolated-world content script: theme enforcement & state synchronization
-        ├── popup.html             # Multi-tab popup UI (Utilities, Mess Menu, Attendance, Mystery)
-        ├── popup.css              # Popup styling (Material Design 3 aesthetic, light & dark mode)
-        ├── popup.js               # Multi-tab controller, weekly menu sync & chrome.storage state
-        ├── menu.json              # Bundled fallback menu data
-        └── icons/
-            ├── icon16.png         # 16x16 icon
-            ├── icon48.png         # 48x48 icon
-            └── icon128.png        # 128x128 icon
+packages/shared-spec/definitions/
+├── attendance-rules.json       # Targets (75/80/85%), Lazy Submit jitter windows
+├── course-aliases.json         # Canonical course mappings ("PSP", "S&AI", etc.)
+├── mess-rules.json             # Meal times, staple dish classifications
+├── supabase-config.json        # Supabase API endpoint & anon configuration
+└── theme-tokens.json           # Shared Dark/Light design tokens
+```
+
+During build time, `./build.sh` uses Bash + `jq` to compile these specs directly into:
+- Native ES Modules for browser extensions (`extension/src/generated-specs.js`)
+- Native Swift constants for WidgetKit & macOS host app (`NewtonSpecs.swift`)
+
+No heavy foreign runtimes, no redundant sync logic.
+
+---
+
+## Platform Targets
+
+### 1. Browser Extensions (Manifest V3)
+Compatible with **Chrome**, **Firefox**, and **Safari**:
+- **Utilities Tab** — Theme management, telemetry shield status, and instant one-click Portal Auth Token clipboard export.
+- **Mess Menu Tab** — Weekly schedule, daily staples vs specials breakdown, and auto-updated cache.
+- **Attendance Tab** — Live portal sync, safe skip calculations, and attendance health dials.
+- **Mystery Tab** — Automated quiz verification, batch submissions, and question interval delays.
+
+### 2. macOS Companion & Desktop Widgets
+- **Menu Bar Host App (`new.newton`)** — Lightweight status-bar agent with native `NSAlert` auth onboarding and background sync.
+- **Desktop WidgetKit Suite (`new.newton.widgets`)**:
+  - **Today Mess Menu (`1x1` / `.systemMedium`)** — Immediate glance at today's active and upcoming meals.
+  - **Weekly Mess Menu (`2x1` & `2x2` / `.systemLarge`)** — Gliding day pills, circular vertical meal rail, and up to 11 dishes per column.
+  - **Attendance Tracker** — Live percentage dials, target ticks, and skip/attend verdicts.
+  - **Mystery Quizzes** — Subject tab bars, unsubmitted lecture/lab columns, and macOS Lazy Submit toggle.
+
+### 3. Supabase Clean-Room Backend
+- Cloud infrastructure hosted on AWS Mumbai (`ap-south-1`).
+- PostgreSQL with strict read-only Row-Level Security for public clients.
+- `sync-quizzes` Deno Edge Function verifying questions and answers under `service_role` authority without exposing private keys to clients.
+
+---
+
+## Directory Structure
+
+```text
+newNewton/
+├── packages/shared-spec/       # Single source of truth (JSON definitions)
+├── scripts/
+│   ├── codegen.js              # Spec compiler: JSON -> JS + Swift
+│   └── build.js                # Minification, validation & multi-browser packaging
+├── extension/                  # Manifest V3 extension source
+│   ├── manifest.json
+│   ├── rules.json              # Declarative telemetry blocking rules
+│   └── src/
+│       ├── background.js       # Service worker: sync & Lazy Submit
+│       ├── telemetry-blocker.js# Main-world script: tracking proxy stubs
+│       ├── content.js          # Isolated-world script: theme enforcement
+│       ├── popup.html / .js    # 4-tab extension interface
+│       ├── quiz-client.js      # Quiz extraction & Supabase client
+│       └── attendance/         # Attendance rollup & skip calculator
+├── macos/                      # Native macOS App & WidgetKit extension
+│   ├── newNewton/              # Xcode workspace (Host App + Widgets + Safari Extension)
+│   ├── Sources/                # CLI build mirror
+│   └── build.sh                # Standalone swiftc build script
+└── supabase/                   # Database schema & sync Edge Functions
 ```
 
 ---
 
-## 3. Core Features & Technical Implementation
+## Getting Started
 
-### A. Telemetry, Tracking & Diagnostic Blocker (Dual-Layer Protection)
+### Prerequisites
+- Bash
+- `jq`
+- Standalone Go `esbuild`
+- Xcode 16+ & macOS Sonoma / Sequoia (for macOS Companion & Widgets)
 
-Blocking tracking on a Next.js / React single-page application requires dual-layer protection to avoid breaking JavaScript execution:
+### Development & Build
 
-1. **Network Layer (`src/background.js` — `declarativeNetRequest`)**:
-   - Manages dynamic rules with `declarativeNetRequest` scoped to requests initiated by `newtonschool.co` and `my.newtonschool.co`.
-   - Blocks network requests matching:
-     - **Microsoft Clarity**: `||clarity.ms`, `||c.clarity.ms` (session recordings, screen capture, heatmaps)
-     - **Google Analytics & GTM**: `||google-analytics.com`, `||analytics.google.com`, `||googletagmanager.com`
-     - **Product Analytics**: `||mixpanel.com`, `||api.mixpanel.com`, `||clevertap.com`, `||wizrocket.com`, `||openpanel.dev`, `||openpanel-api.newtonschool.co`
-     - **Ad Pixels**: `||facebook.com/tr`, `||connect.facebook.net`, `||px.ads.linkedin.com`, `||snap.licdn.com`, `||trc.taboola.com`, `||q.quora.com`, `||hotjar.com`
-     - **Diagnostic Services**: `||sentry.io`, `||datadoghq.com`, `||fullstory.com`, `||logrocket.io`
-     - **Newton Diagnostic Endpoint**: `||newtonschool.co/api/v1/user/report/` (internal web diagnostic and telemetry reporting)
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/suwupnil/newNewton.git
+   cd newNewton
+   ```
 
-2. **In-Page Stub Layer (`src/telemetry-blocker.js` — `"world": "MAIN"`)**:
-   - Runs in the webpage's main execution context at `document_start` before any page scripts or inline scripts run.
-   - **Crash-Proof Stubs**: Provides recursive `Proxy` stubs for tracking globals (`window.clarity`, `window.mixpanel`, `window.clevertap`, `window.openpanel`, `window.op`, `window.fbq`, `window.lintrk`, `window.qp`, `window.gtag`, `window.ga`, `window.dataLayer`). This guarantees that calls like `mixpanel.people.set(...)` or `clarity('set', ...)` succeed harmlessly without throwing `TypeError: Cannot read properties of undefined`.
-   - **Beacon Interception**: Intercepts `navigator.sendBeacon` and silently drops diagnostic payloads matching telemetry patterns while returning `true` to signal success.
-   - **Fetch & XHR Interception**: Intercepts `window.fetch` and `XMLHttpRequest` to immediately return synthetic `{ blocked: true, status: "ok" }` responses for diagnostic reporting calls without causing network errors or React error boundary trips.
-   - **Real-Time Toggle**: Listens for toggle events via custom DOM events, window `postMessage`, and `localStorage` to turn blocking ON or OFF on the fly.
+2. **Run Codegen & Build Extension**:
+   ```bash
+   ./build.sh
+   ```
+   *This compiles shared specs, validates TypeScript, and outputs minified distribution builds to `dist/`.*
 
-### B. Native Grauity Theme Switcher
+3. **Load in Browser (Chrome / Brave / Edge)**:
+   - Navigate to `chrome://extensions/`
+   - Enable **Developer mode** (top-right toggle)
+   - Click **Load unpacked** and select the `dist/extension/` (or `extension/`) directory.
 
-1. **Class Enforcement**:
-   - Applies `grauity-theme-dark` (or `grauity-theme-light`) directly to `document.body`.
-   - No custom CSS stylesheet overrides: cleanly relies on Newton's internal Grauity CSS variables and tokens.
-2. **Persistence**:
-   - Synchronizes selection with `localStorage`:
-     ```javascript
-     localStorage.setItem('theme-preference', JSON.stringify({
-       themeName: themeName,
-       enable_platform_wide_dark_theme: isDark
-     }));
-     localStorage.setItem('app_theme_enabled', isDark ? 'true' : 'false');
-     ```
-3. **Next.js Route Transition Resistance**:
-   - Employs a `MutationObserver` on `document.documentElement` to instantly re-apply the theme if Next.js page transitions strip the body class.
-4. **System Mode Synchronization**:
-   - Supports 3 modes: **Light**, **Dark**, and **System** (listening dynamically to OS color-scheme shifts via `window.matchMedia`).
-
-### C. Campus Mess Menu Subsystem (`src/popup.js`, `src/popup.html`, `src/popup.css`)
-
-- **Maintained by Garvit-png**: The weekly mess menu data is maintained upstream by [Garvit-png](https://github.com/Garvit-png).
-- **Weekly Upstream Sync**: Fetches the weekly menu JSON from GitHub raw (`https://raw.githubusercontent.com/suwupnil/newNewton/refs/heads/main/menu.json`).
-- **Monday Auto-Refresh**: Caches the menu locally in `chrome.storage.local`. Automatically detects when a new Monday has occurred or if 7 days have elapsed, triggering a background refresh while showing cached data instantly (0ms latency).
-- **Dish Classification (`isSecondaryItem`)**:
-  - **✨ Special & Main**: Highlights special signature dishes (Onion Uttapam, Rajma Masala, Gulab Jamun, Soya Chaap, Paneer Matar, Pizza, Wada Pav, etc.) with accented pill badges and colored indicator dots.
-  - **Daily Staples**: Groups mundane everyday items (milk, tea, chapati, rice, green salad, sambar, rasam, curd, pickles, chutneys) into clean, muted tags so students can scan the specials at a glance.
-- **7-Day Selector Bar**: Quickly switch between Monday through Sunday with dynamic date display (e.g. `Wed, 30 Sep`) and real-world today detection.
-- **Real-Time Meal Detection**:
-  - Automatically flags the active meal with a glowing `● Serving Now` badge during service hours (Breakfast: 07:30–09:30 AM, Lunch: 12:00–02:30 PM, Snacks: 04:30–06:30 PM, Dinner: 07:30–09:30 PM).
-  - Flags the next meal with `Next Up` and auto-expands it on today's view.
-- **Offline & Bundled Fallback**: Includes a bundled `menu.json` so the menu displays reliably even without network access.
-- **Manual Force Refresh**: Header button with spinning animation to force-sync the latest menu anytime.
-
-### D. Attendance Subsystem (`src/attendance/`)
-- **Rollup Logic & Grouping**: Adapted and ported from [nst-attendance](https://github.com/yats0x7/nst-attendance) by yats0x7.
-- **Direct LMS API Integration**: Concurrently fetches unit performance and lecture details directly from the Newton LMS API using the student's portal auth token.
-- **Theory & Lab Rollups**: Groups lecture and practical sections into combined subjects with weighted attendance totals.
-- **Actionable Verdict Sentences**: Clear instructions on exact skip budgets and recovery streaks.
-- **Safety Target Switcher**: Real-time client-side switching between 75%, 80%, and 85% safety targets with progress bar ticks and native `<details>` missed lecture history.
-
-### E. Mystery Module Placeholder
-- Secret module placeholder reserved for upcoming releases.
+4. **Build macOS Companion & Widgets**:
+   - Open `macos/newNewton/newNewton.xcodeproj` in Xcode.
+   - Select the `newNewton` scheme and press `Cmd + R` to run the menu bar app.
+   - Add the newNewton widgets to your macOS desktop or Notification Center.
+   - Enter your Newton portal auth token via the menu bar item (`Paste / Update Portal Auth Token…`) or copy it directly with one click from the extension's Utilities tab.
 
 ---
 
-## 4. Permissions & Manifest V3 Configuration
+## Updates
 
-- **`storage`**: Persists user settings (`themeMode`, `themeName`, `blockTelemetry`, `mess_menu_data`, `nst_attendance_data`) via `chrome.storage.sync` and `chrome.storage.local`.
-- **`declarativeNetRequest`**: Dynamically activates or deactivates network blocking rules without requiring broad webRequest blocking overhead.
-- **`activeTab` & `tabs` & `scripting`**: Dispatches real-time messages and fallback execution to the active Newton School tab.
-- **`host_permissions`**: Scoped strictly to `https://my.newtonschool.co/*`, `https://*.newtonschool.co/*`, and `https://raw.githubusercontent.com/*`.
-- **Content Scripts**:
-  - `src/telemetry-blocker.js`: `"world": "MAIN"`, `"run_at": "document_start"`.
-  - `src/content.js`: `"world": "ISOLATED"`, `"run_at": "document_start"`.
+- **In-App Notifier** — The extension automatically checks GitHub Releases and highlights available updates beside the header.
+- **Direct CRX & ZIP** — Packaged `.crx` and unpacked `.zip` builds are published with every release on [GitHub Releases](https://github.com/suwupnil/newNewton/releases/latest).
+- **Google Update Protocol** — Native background updates via `updates.xml`.
 
 ---
 
-## 5. Credits & Acknowledgements
+## Acknowledgements
 
-- **Mess Menu**: Maintained by [Garvit-png](https://github.com/Garvit-png).
-- **Attendance Rollup Engine**: Logic and heuristics powered by [nst-attendance](https://github.com/yats0x7/nst-attendance) by [yats0x7](https://github.com/yats0x7).
-
----
-
-## 6. How to Load and Test in Google Chrome
-
-1. Open **Google Chrome**.
-2. Navigate to `chrome://extensions/`.
-3. Enable **Developer mode** via the toggle switch in the top-right corner.
-4. Click **Load unpacked**.
-5. Select the extension directory: `/Users/swap/Developer/newton-enhancer/extension`.
-6. Visit [https://my.newtonschool.co](https://my.newtonschool.co).
-7. Open the extension popup:
-   - Toggle theme between **Light**, **Dark**, and **System**.
-   - Toggle **Telemetry & Tracking** ON to block tracking and diagnostic uploads, or OFF to allow.
-   - Check the **Mess Menu** tab with Garvit-png's maintained menu data.
-   - Check the **Attendance** tab with live sync, skip calculators, and rollup metrics.
+- **Mess Menu Upstream** — Weekly menu data maintained by [Garvit-png](https://github.com/Garvit-png).
+- **Attendance Heuristics** — Rollup math inspired and adapted from [nst-attendance](https://github.com/yats0x7/nst-attendance) by [yats0x7](https://github.com/yats0x7).
 
 ---
 
-## 7. Automatic Chrome Updates
+## License
 
-`newNewton` supports native Chrome auto-updates via the Google Update Protocol (v2.0):
-
-1. **Packaged CRX Installation**:
-   - Download `newNewton.crx` from the [Latest Release](https://github.com/suwupnil/newNewton/releases/latest).
-   - In `chrome://extensions/` with **Developer mode** enabled, drag and drop `newNewton.crx`.
-2. **Auto-Update Mechanism**:
-   - The extension manifest specifies `update_url`:
-     `https://raw.githubusercontent.com/suwupnil/newNewton/main/updates.xml`
-   - Every few hours (or immediately upon clicking **Update** in `chrome://extensions/`), Chrome inspects `updates.xml`.
-   - If a new version exists, Chrome automatically downloads and installs the updated `.crx` seamlessly without losing local storage or preferences.
+MIT © [Swapnil](https://github.com/suwupnil)

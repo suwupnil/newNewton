@@ -31,4 +31,3 @@ The project is configured with:
 ## 3. Edge Function Deployment
 
 The Edge Function code is located in [`functions/sync-quizzes/index.ts`](./functions/sync-quizzes/index.ts).
-It is automatically deployed to Supabase via the Antigravity Supabase MCP server.

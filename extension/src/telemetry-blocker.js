@@ -10,6 +10,9 @@
  */
 
 (function () {
+  if (window.__newtonBlockerInitialized) return;
+  window.__newtonBlockerInitialized = true;
+
   const STORAGE_KEY = 'newton_enhancer_block_telemetry';
 
   // 1. Determine initial blocking state synchronously from localStorage

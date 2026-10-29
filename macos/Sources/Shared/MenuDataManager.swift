@@ -8,8 +8,7 @@ public final class MenuDataManager: @unchecked Sendable {
     public static let shared = MenuDataManager()
 
     private let appGroupID = "group.com.newton.enhancer"
-    private let remoteMenuURL = URL(string: "https://raw.githubusercontent.com/suwupnil/newNewton/refs/heads/main/menu.json")!
-    private let fallbackRemoteMenuURL = URL(string: "https://raw.githubusercontent.com/suwupnil/newNewton/main/menu.json")!
+    private let remoteMenuURL = URL(string: "https://ru-print.vercel.app")!
     private let dayOffsetKey = "newton_menu_day_offset"
     private let selectedDayKey = "newton_menu_selected_day"
     private let mealKey = "newton_menu_meal_override"
@@ -289,41 +288,13 @@ public final class MenuDataManager: @unchecked Sendable {
         }
         memoryLock.unlock()
 
-        // 1. Try Local Stored Cache (UserDefaults or Cache File from previous GitHub fetch)
+        // 1. Try Local Stored Cache (UserDefaults or Cache File from previous ru-print fetch)
         if let localCached = loadLocalCachedMenu() {
             updateMemoryCache(localCached)
             return localCached
         }
 
-        // 2. Try Bundled Resource (check main bundle and module bundle)
-        let bundlesToCheck = [Bundle.main, Bundle(for: MenuDataManager.self)]
-        for bundle in bundlesToCheck {
-            if let bundleURL = bundle.url(forResource: "menu", withExtension: "json"),
-               let data = try? Data(contentsOf: bundleURL),
-               let decoded = try? JSONDecoder().decode(WeeklyMenu.self, from: data),
-               !decoded.isEmpty {
-                updateMemoryCache(decoded)
-                return decoded
-            }
-        }
-
-        // 3. Fallback to Local Repository Paths (Development & local testing)
-        let devFallbackPaths = [
-            "/Users/swap/Developer/newNewton/menu.json",
-            "/Users/swap/Developer/newNewton/macos/Resources/menu.json",
-            "/Users/swap/Developer/newNewton/macos/newNewton/newNewtonWidgets/menu.json",
-            "/Users/swap/Developer/newNewton/macos/newNewton/newNewton/menu.json"
-        ]
-        for devPath in devFallbackPaths {
-            if let data = try? Data(contentsOf: URL(fileURLWithPath: devPath)),
-               let decoded = try? JSONDecoder().decode(WeeklyMenu.self, from: data),
-               !decoded.isEmpty {
-                updateMemoryCache(decoded)
-                return decoded
-            }
-        }
-
-        // 4. Offline first-boot fallback (Note: does NOT set lastUpdatedKey so remote fetch still runs)
+        // 2. Offline first-boot fallback (Note: does NOT set lastUpdatedKey so remote fetch still runs)
         if let data = embeddedFallbackMenuJSON.data(using: .utf8),
            let decoded = try? JSONDecoder().decode(WeeklyMenu.self, from: data),
            !decoded.isEmpty {
@@ -350,32 +321,84 @@ public final class MenuDataManager: @unchecked Sendable {
         return (day: day, menu: daily, isToday: isToday, meal: meal, todayDay: today, todayMenu: todayDaily, todayMeal: todayMeal)
     }
 
-    // MARK: - Remote Synchronization from GitHub
+    // MARK: - Remote Synchronization from ru-print.vercel.app
     @discardableResult
     public func refreshFromRemote() async -> Bool {
-        let urls = [remoteMenuURL, fallbackRemoteMenuURL]
-        for url in urls {
-            do {
-                var request = URLRequest(url: url)
-                request.cachePolicy = .reloadIgnoringLocalCacheData
-                request.timeoutInterval = 10
+        do {
+            var homeReq = URLRequest(url: remoteMenuURL)
+            homeReq.cachePolicy = .reloadIgnoringLocalCacheData
+            homeReq.timeoutInterval = 10
+            let (htmlData, _) = try await URLSession.shared.data(for: homeReq)
+            guard let html = String(data: htmlData, encoding: .utf8) else { return false }
 
-                let (data, response) = try await URLSession.shared.data(for: request)
-                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                    continue
-                }
-
-                let decoded = try JSONDecoder().decode(WeeklyMenu.self, from: data)
-                guard !decoded.isEmpty else { continue }
-
-                saveMenuLocally(data, decoded: decoded, timestamp: Date().timeIntervalSince1970)
-                notifyWidgets()
-                return true
-            } catch {
-                continue
+            let pattern = "/static/chunks/app/page-[a-f0-9]+\\.js"
+            guard let regex = try? NSRegularExpression(pattern: pattern),
+                  let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+                  let range = Range(match.range, in: html) else {
+                return false
             }
+
+            let chunkPath = String(html[range])
+            let chunkURL = URL(string: "https://ru-print.vercel.app/_next" + chunkPath)!
+            var chunkReq = URLRequest(url: chunkURL)
+            chunkReq.cachePolicy = .reloadIgnoringLocalCacheData
+            chunkReq.timeoutInterval = 10
+            let (jsData, _) = try await URLSession.shared.data(for: chunkReq)
+            guard let js = String(data: jsData, encoding: .utf8) else { return false }
+
+            let startStr = "j={Monday:{breakfast:["
+            var startObjIdx: Int = -1
+
+            if let r = js.range(of: startStr) {
+                startObjIdx = js.distance(from: js.startIndex, to: r.lowerBound) + 2
+            } else {
+                let fallbackPattern = "Monday\\s*:\\s*\\{\\s*breakfast\\s*:\\s*\\["
+                if let fallbackRegex = try? NSRegularExpression(pattern: fallbackPattern),
+                   let fbMatch = fallbackRegex.firstMatch(in: js, range: NSRange(js.startIndex..., in: js)),
+                   let fbRange = Range(fbMatch.range, in: js) {
+                    let prefix = js[..<fbRange.lowerBound]
+                    if let lastBrace = prefix.lastIndex(of: "{") {
+                        startObjIdx = js.distance(from: js.startIndex, to: lastBrace)
+                    }
+                }
+            }
+
+            guard startObjIdx >= 0 else { return false }
+
+            let startIndex = js.index(js.startIndex, offsetBy: startObjIdx)
+            var depth = 0
+            var endIndex: String.Index?
+
+            for idx in js.indices[startIndex...] {
+                let ch = js[idx]
+                if ch == "{" || ch == "[" {
+                    depth += 1
+                } else if ch == "}" || ch == "]" {
+                    depth -= 1
+                    if depth == 0 {
+                        endIndex = js.index(after: idx)
+                        break
+                    }
+                }
+            }
+
+            guard let end = endIndex else { return false }
+
+            let rawObjStr = String(js[startIndex..<end])
+
+            let keyRegex = try NSRegularExpression(pattern: "([{,]\\s*)([a-zA-Z0-9_]+)\\s*:")
+            let jsonStr = keyRegex.stringByReplacingMatches(in: rawObjStr, range: NSRange(rawObjStr.startIndex..., in: rawObjStr), withTemplate: "$1\"$2\":")
+
+            guard let jsonData = jsonStr.data(using: .utf8) else { return false }
+            let decoded = try JSONDecoder().decode(WeeklyMenu.self, from: jsonData)
+            guard !decoded.isEmpty else { return false }
+
+            saveMenuLocally(jsonData, decoded: decoded, timestamp: Date().timeIntervalSince1970)
+            notifyWidgets()
+            return true
+        } catch {
+            return false
         }
-        return false
     }
 
     private func updateMemoryCache(_ menu: WeeklyMenu) {

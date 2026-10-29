@@ -5,11 +5,23 @@
  */
 
 (function () {
+  const chrome = globalThis.chrome || globalThis.browser;
   const GRAUITY_LIGHT = 'grauity-theme-light';
   const GRAUITY_DARK = 'grauity-theme-dark';
   const THEME_PREF_KEY = 'theme-preference';
   const APP_THEME_KEY = 'app_theme_enabled';
   const TELEMETRY_STORAGE_KEY = 'newton_enhancer_block_telemetry';
+
+  // Ensure main-world telemetry blocker is injected on browsers that ignore manifest world: "MAIN" (e.g., older Safari/Firefox)
+  try {
+    if (document.documentElement && !document.documentElement.hasAttribute('data-newton-blocker-active') && chrome && chrome.runtime && chrome.runtime.getURL) {
+      const scriptEl = document.createElement('script');
+      scriptEl.src = chrome.runtime.getURL('src/telemetry-blocker.js');
+      scriptEl.async = false;
+      (document.head || document.documentElement).appendChild(scriptEl);
+      scriptEl.onload = () => scriptEl.remove();
+    }
+  } catch (e) {}
 
   function resolveEffectiveTheme(mode) {
     if (mode === 'system') {

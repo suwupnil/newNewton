@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "newNewton",
   "version": "1.2.2",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4mBz7CFKduePPptK8y9Sx4ZJXiOHMOwyfUzy7ZrmnwwjkJmiDgChZJHmWua25CFJfv0ksqBs4aoGIIiIIgzqZ71MqR4sr6nDZjM2NjFkkpOg9Gc2kNb/GIXo+VsSOc4K5BE6egetS33p01UpwpnPW8ENSOzZzHOsdscVLjfrXHdNgfAW6hWO68QhjePFoHCe96qCCjyQTE06mYIBo06cjW4lvXgTxjZQMNnigtQVocuoJGXysGqRsWngwIP5J0P6DjmRn+BuwWqs+mDPbwLuvwHoQfRUZHCm90KgqvR8toDeZ+fGwUsaSYsh/cqYg7KFunJLiJ8+2YPCfX/yIp8bsQIDAQAB",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr0vmIWWndhJJ/j26iTvylAtP67J/Qsh/DfzDsDk5Nmn0p7AbsGItCZRAqnWf9YhwimdIV+M3jUHSD93w7Nicfe223ZoFn37bDumaVdReQVH5Eh6qGExF2QCS0yuYZTbXcmzpgaLL2C1XOfB14PQid/bterA7s9b/gw9OywYUlvtRbKTE1AJ578t77zAT+xTAm0DV0JSpPX4lA6X4lgCMXqGzZgtqWuL9/q8UhMtYBU6P/xQ3Cawajz+a/yhnnLc4NiXloLmJeX1KzA5KcBjGGaY27RRlXvsHabmCdxoBFkkUTYPzS+srpE0yS3BZhiJwNo6gSRJ+FrpwDddRnj3/yQIDAQAB",
   "update_url": "https://raw.githubusercontent.com/suwupnil/newNewton/main/updates.xml",
   "description": "UX Enhancer for Newton School - Native Grauity Theme Switcher, Telemetry Blocker and Supabase Solution Archiver",
   "permissions": [
@@ -19,6 +19,7 @@
     "https://*.newtonschool.co/*",
     "https://raw.githubusercontent.com/*",
     "https://api.github.com/*",
+    "https://ru-print.vercel.app/*",
     "https://*.supabase.co/*",
     "http://127.0.0.1:54321/*"
   ],
@@ -55,6 +56,18 @@
         "src/content.js"
       ],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/telemetry-blocker.js",
+        "src/icons/*"
+      ],
+      "matches": [
+        "https://my.newtonschool.co/*",
+        "https://*.newtonschool.co/*"
+      ]
     }
   ],
   "icons": {

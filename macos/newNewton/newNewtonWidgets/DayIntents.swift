@@ -156,3 +156,48 @@ public struct SelectMealIntent: AppIntent {
     }
 }
 
+// MARK: - Attendance Target Selection Intent (75% / 80% / 85%)
+@available(macOS 14.0, *)
+public struct SelectAttendanceTargetIntent: AppIntent {
+    public static var title: LocalizedStringResource = "Select Attendance Target"
+    public static var description = IntentDescription("Switch target threshold (75%, 80%, or 85%)")
+
+    @Parameter(title: "Target")
+    public var targetPercent: Int
+
+    public init() {
+        self.targetPercent = 75
+    }
+
+    public init(targetPercent: Int) {
+        self.targetPercent = targetPercent
+    }
+
+    public func perform() async throws -> some IntentResult {
+        let fraction = Double(targetPercent) / 100.0
+        PortalDataManager.shared.selectAttendanceTarget(fraction)
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.attendance")
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+        return .result()
+    }
+}
+
+// MARK: - Refresh Portal Attendance Data Intent
+@available(macOS 14.0, *)
+public struct RefreshPortalDataIntent: AppIntent {
+    public static var title: LocalizedStringResource = "Refresh Attendance Data"
+    public static var description = IntentDescription("Sync live Attendance from Newton Portal")
+
+    public init() {}
+
+    public func perform() async throws -> some IntentResult {
+        await PortalDataManager.shared.syncAllPortalData()
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "com.newton.enhancer.widget.attendance")
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+        return .result()
+    }
+}

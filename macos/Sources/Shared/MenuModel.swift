@@ -101,10 +101,10 @@ public enum MealType: String, CaseIterable, Identifiable, Sendable {
 
     public var emoji: String {
         switch self {
-        case .breakfast: return "叉"
-        case .lunch: return "惚"
-        case .snacks: return "笘包ｸ
-        case .dinner: return "佐"
+        case .breakfast: return "🍳"
+        case .lunch: return "🍱"
+        case .snacks: return "☕️"
+        case .dinner: return "🌙"
         }
     }
 

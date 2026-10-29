@@ -13,5 +13,6 @@ struct newNewtonWidgetsBundle: WidgetBundle {
     var body: some Widget {
         TodayMessMenuWidget()
         WeeklyMessMenuWidget()
+        AttendanceWidget()
     }
 }
