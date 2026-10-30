@@ -62,10 +62,15 @@ jobs:
           tag_name: "v${{ steps.ext_version.outputs.version }}"
           name: "newNewton v${{ steps.ext_version.outputs.version }}"
           body: |
-            Automated production build for newNewton v${{ steps.ext_version.outputs.version }}.
+            newNewton v${{ steps.ext_version.outputs.version }} introduces the native Rust Newton LMS MCP server.
+
+            The MCP server exposes curriculum scope checking, coding-style analysis, Judge0 execution, assignment grading, language selection, and optional editor telemetry over stdio JSON-RPC. See `mcp-server/README.md` for setup.
+
+            Included extension artifacts:
             - Chrome Extension (.crx, .zip)
             - Mozilla Firefox Extension (.xpi)
-            - macOS Safari Web Extension Bundle
+
+            The macOS application and widgets are not included in this release.
           files: |
             dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip
             dist/newNewton.crx

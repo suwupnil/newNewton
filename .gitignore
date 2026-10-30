@@ -6,3 +6,7 @@ refresh.sh
 .agents/
 skills/
 .env/
+xcuserdata/
+*.xcuserstate
+target/
+mcp-server/target/

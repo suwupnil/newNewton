@@ -29,15 +29,6 @@ contributions.
 
 ---
 
-## Code of Conduct
-
-This project and everyone participating in it is governed by the
-[newNewton Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are
-expected to uphold this code. Please report unacceptable behavior to
-[sw@pnilpradhan.onmicrosoft.com](mailto:sw@pnilpradhan.onmicrosoft.com).
-
----
-
 ## Architecture Overview
 
 newNewton is designed around a **Zero-Overhead Single-Spec Codegen
@@ -166,6 +157,18 @@ The native macOS application is written in Swift and SwiftUI using WidgetKit:
     `.systemLarge`).
 - Test interactive intents in the Xcode canvas preview or run the widget
   directly in Simulator / macOS Widget Gallery.
+
+### 5. Working on the Rust MCP Server (`mcp-server/`)
+
+The assignment solver MCP server is a native, ultra-low memory Rust server:
+
+```bash
+cd mcp-server
+cargo test            # Run protocol and model unit tests
+cargo build --release # Build optimized release binary
+```
+
+Configure in Claude Desktop (`claude_desktop_config.json`) or Cursor (`.cursor/mcp.json`) pointing to `mcp-server/target/release/newton-mcp-server`.
 
 ---
 

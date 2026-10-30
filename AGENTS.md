@@ -15,6 +15,8 @@
 4. **Clean-Room Supabase LMS Archiver** (`supabase/`) providing:
    - Read-only public assessment discovery via PostgreSQL Row-Level Security (RLS).
    - Deno Edge Function (`supabase/functions/sync-quizzes/index.ts`) using `SUPABASE_SERVICE_ROLE_KEY` to verify submissions directly against Newton LMS (`https://my.newtonschool.co`) before writing to the database.
+5. **High-Performance Rust MCP Server** (`mcp-server/`):
+   - Stdio JSON-RPC 2.0 server delivering curriculum scope checking, past 10 solved assignment style emulation, pre-submission Judge0 execution, full test grading triage, TypeSafe Jev System One language decision, and browser telemetry mirroring to LLM agents.
 
 ---
 
@@ -86,6 +88,17 @@ newNewton/
 │           ├── Info.plist
 │           ├── SafariWebExtensionHandler.swift # Native messaging bridge for Safari
 │           └── Resources/                      # FLATTENED extension bundle for Xcode synchronized root group
+├── mcp-server/                                 # High-performance Rust MCP Server (stdio JSON-RPC)
+│   ├── Cargo.toml                              # Rust dependencies & crate setup
+│   ├── README.md                               # Complete MCP server manual & tool catalog
+│   ├── tests/                                  # Integration & unit test suites
+│   └── src/
+│       ├── main.rs                             # Server entry point
+│       ├── config.rs                           # Auth token, env vars & telemetry toggle
+│       ├── models.rs                           # Strongly typed LMS & Judge0 schemas
+│       ├── api/                                # LMS, Judge0, Jev, and Telemetry API clients
+│       ├── mcp/                                # JSON-RPC 2.0 protocol & async stdio event loop
+│       └── tools/                              # All 9 exposed MCP tools
 └── supabase/                                   # Supabase Backend
     ├── schema.sql                              # public.quizzes DDL & RLS policies
     └── functions/sync-quizzes/index.ts         # Deno Edge Function (ARCHIVE_ONE & SYNC_ALL)
@@ -206,6 +219,16 @@ Because macOS App Sandbox can isolate `UserDefaults(suiteName: "group.com.newton
    ./refresh.sh
    ```
 
+### 6.3 Building and Testing the Rust MCP Server (`mcp-server/`)
+1. **Run Unit and Protocol Tests**:
+   ```bash
+   cargo test --manifest-path mcp-server/Cargo.toml
+   ```
+2. **Compile High-Performance Release Binary**:
+   ```bash
+   cargo build --release --manifest-path mcp-server/Cargo.toml
+   ```
+
 ---
 
 ## 7. Pre-Commit / Post-Change Verification Checklist for Agents
@@ -217,6 +240,11 @@ Before concluding any coding turn in this repository, verify:
 - [ ] Did you update **`AGENTS.md`** and **`CONTRIBUTING.md`** to reflect any new files or architectural changes?
 
 ## 10. Living Context & Architectural Decision Ledger
+
+- **2026-10-30 — Implemented High-Performance Rust MCP Server**:
+  - Implemented standard stdio JSON-RPC MCP server (`mcp-server/`) delivering all 7 requested LMS capabilities.
+  - Exposes 9 tools: `get_course_scope`, `get_user_coding_style`, `run_playground_code`, `submit_assignment_solution`, `get_pending_assignments`, `decide_strategy_and_language`, `get_problem_details`, `save_editor_code`, `configure_telemetry`.
+  - Supports TypeSafe Jev System One integration with graceful fallback, and browser telemetry mirroring for `editor_save_event`.
 
 - **2026-10-30 — Aligned Chrome extension identity with local signing key**:
   - Updated `extension/manifest.json` to use the public key derived from
