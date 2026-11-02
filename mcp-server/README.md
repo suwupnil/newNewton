@@ -149,7 +149,58 @@ The server exposes 9 primary tools (plus short aliases for LLM compatibility):
 
 ---
 
-## 5. Building & Running
+## 5. End-User Installation
+
+Download the archive for your operating system from the latest
+[GitHub Release](https://github.com/suwupnil/newNewton/releases/latest):
+
+| Platform | Archive |
+| --- | --- |
+| Linux x86_64 | `newton-mcp-server-vVERSION-linux-x86_64.tar.gz` |
+| macOS Apple Silicon | `newton-mcp-server-vVERSION-macos-arm64.tar.gz` |
+| Windows x86_64 | `newton-mcp-server-vVERSION-windows-x86_64.zip` |
+
+Extract the archive and configure your MCP client with the absolute path to
+the included `newton-mcp-server` executable. Set `NEWTON_AUTH_TOKEN` in the
+client configuration to the user's Newton LMS token. The server communicates
+with the client over stdio; no port or background service is required.
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "newton-lms": {
+      "command": "/absolute/path/to/newton-mcp-server",
+      "env": {
+        "NEWTON_AUTH_TOKEN": "YOUR_NEWTON_AUTH_TOKEN"
+      }
+    }
+  }
+}
+```
+
+### Cursor
+
+```json
+{
+  "mcpServers": {
+    "newton-lms": {
+      "command": "/absolute/path/to/newton-mcp-server",
+      "env": {
+        "NEWTON_AUTH_TOKEN": "YOUR_NEWTON_AUTH_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Restart the MCP client after saving its configuration. It will launch the
+server automatically and expose the tools listed below. Keep the executable
+in a stable location; moving or deleting it requires updating the client
+configuration.
+
+## 6. Building & Running
 
 ### Build Binary
 ```bash
@@ -169,7 +220,7 @@ cargo test
 
 ---
 
-## 6. Client Configuration Examples
+## 7. Client Configuration Examples
 
 Replace `<PATH_TO_REPO>` with the absolute path to your local `newNewton` repository clone (for example `/Users/<username>/Developer/newNewton` or `/home/<username>/projects/newNewton`).
 

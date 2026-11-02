@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "newNewton",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr0vmIWWndhJJ/j26iTvylAtP67J/Qsh/DfzDsDk5Nmn0p7AbsGItCZRAqnWf9YhwimdIV+M3jUHSD93w7Nicfe223ZoFn37bDumaVdReQVH5Eh6qGExF2QCS0yuYZTbXcmzpgaLL2C1XOfB14PQid/bterA7s9b/gw9OywYUlvtRbKTE1AJ578t77zAT+xTAm0DV0JSpPX4lA6X4lgCMXqGzZgtqWuL9/q8UhMtYBU6P/xQ3Cawajz+a/yhnnLc4NiXloLmJeX1KzA5KcBjGGaY27RRlXvsHabmCdxoBFkkUTYPzS+srpE0yS3BZhiJwNo6gSRJ+FrpwDddRnj3/yQIDAQAB",
   "update_url": "https://raw.githubusercontent.com/suwupnil/newNewton/main/updates.xml",
   "description": "UX Enhancer for Newton School - Native Grauity Theme Switcher, Telemetry Blocker and Supabase Solution Archiver",

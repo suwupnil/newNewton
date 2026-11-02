@@ -9,72 +9,146 @@ permissions:
   contents: write
 
 jobs:
-  # =========================================================================
-  # EXTENSION PACKAGING & GITHUB RELEASE (.crx, .zip & .xpi)
-  # =========================================================================
-  build-and-release-extension:
-    name: Package Extension & Publish Release
+  build-extension:
+    name: Package Browser Extension
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install jq
+      - name: Install jq and esbuild
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-
-      - name: Install Standalone esbuild
-        run: |
           npm install -g esbuild
 
       - name: Extract Manifest Version
-        id: ext_version
-        run: |
-          VERSION=$(jq -r '.version' ./extension/manifest.json)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Detected version: v${VERSION}"
+        id: version
+        run: echo "version=$(jq -r '.version' extension/manifest.json)" >> "$GITHUB_OUTPUT"
 
       - name: Run Native Build Pipeline
         run: ./build.sh
 
-      - name: Create ZIP Package
+      - name: Create Extension Packages
         run: |
           cd dist/extension
-          zip -r ../newNewton-v${{ steps.ext_version.outputs.version }}.zip . -x ".*" -x "__MACOSX"
+          zip -r "../newNewton-v${{ steps.version.outputs.version }}.zip" . -x ".*" -x "__MACOSX"
           cd ../..
-
-      - name: Build Signed CRX File
-        run: |
           if [ -n "${{ secrets.CRX_PRIVATE_KEY }}" ]; then
-            echo "${{ secrets.CRX_PRIVATE_KEY }}" > /tmp/key.pem
-            npx --yes crx3 -p /tmp/key.pem -o dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx dist/extension
-            cp dist/newNewton-v${{ steps.ext_version.outputs.version }}.crx dist/newNewton.crx
+            printf '%s' "${{ secrets.CRX_PRIVATE_KEY }}" > /tmp/key.pem
+            npx --yes crx3 -p /tmp/key.pem \
+              -o "dist/newNewton-v${{ steps.version.outputs.version }}.crx" dist/extension
+            cp "dist/newNewton-v${{ steps.version.outputs.version }}.crx" dist/newNewton.crx
             rm -f /tmp/key.pem
-            echo "Successfully generated signed CRX from minified build."
-          else
-            echo "Notice: CRX_PRIVATE_KEY secret is not set. Skipping .crx generation."
           fi
 
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload Extension Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: "v${{ steps.ext_version.outputs.version }}"
-          name: "newNewton v${{ steps.ext_version.outputs.version }}"
-          body: |
-            newNewton v${{ steps.ext_version.outputs.version }} introduces the native Rust Newton LMS MCP server.
-
-            The MCP server exposes curriculum scope checking, coding-style analysis, Judge0 execution, assignment grading, language selection, and optional editor telemetry over stdio JSON-RPC. See `mcp-server/README.md` for setup.
-
-            Included extension artifacts:
-            - Chrome Extension (.crx, .zip)
-            - Mozilla Firefox Extension (.xpi)
-
-            The macOS application and widgets are not included in this release.
-          files: |
-            dist/newNewton-v${{ steps.ext_version.outputs.version }}.zip
+          name: extension-artifacts
+          path: |
+            dist/newNewton-v${{ steps.version.outputs.version }}.zip
             dist/newNewton.crx
             dist/newNewton-firefox.xpi
+          if-no-files-found: warn
+
+      - name: Export Version
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-version
+          path: extension/manifest.json
+
+  build-mcp:
+    name: Build MCP Server (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - name: macos-arm64
+            runner: macos-14
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - name: windows-x86_64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Read Version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep -m1 '"version"' extension/manifest.json | sed -E 's/.*"version": "([^"]+)".*/\1/')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Release Binary
+        run: cargo build --locked --release --manifest-path mcp-server/Cargo.toml --target ${{ matrix.target }}
+
+      - name: Package Unix Binary
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          mkdir package
+          cp "mcp-server/target/${{ matrix.target }}/release/newton-mcp-server" package/
+          cp mcp-server/README.md package/README.md
+          tar -czf "newton-mcp-server-v${{ steps.version.outputs.version }}-${{ matrix.name }}.tar.gz" -C package .
+
+      - name: Package Windows Binary
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory package | Out-Null
+          Copy-Item "mcp-server/target/${{ matrix.target }}/release/newton-mcp-server.exe" package/
+          Copy-Item mcp-server/README.md package/
+          Compress-Archive -Path package/* -DestinationPath "newton-mcp-server-v${{ steps.version.outputs.version }}-${{ matrix.name }}.zip"
+
+      - name: Upload MCP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-${{ matrix.name }}
+          path: newton-mcp-server-v${{ steps.version.outputs.version }}-${{ matrix.name }}.*
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-extension, build-mcp]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: "*"
+          merge-multiple: true
+
+      - name: Read Version
+        id: version
+        run: echo "version=$(jq -r '.version' release-assets/manifest.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.version }}"
+          name: "newNewton v${{ steps.version.outputs.version }}"
+          body: |
+            newNewton v${{ steps.version.outputs.version }} includes the native Rust Newton LMS MCP server.
+
+            End users can download the MCP archive for their operating system, extract it, and point their MCP client at the included executable. See `mcp-server/README.md` for setup and authentication.
+
+            Included artifacts:
+            - Chrome Extension (.crx, .zip)
+            - Mozilla Firefox Extension (.xpi)
+            - Newton MCP Server binaries for Linux x86_64, macOS Apple Silicon, and Windows x86_64
+
+            The macOS companion application and widgets are not included in this release.
+          files: release-assets/*
           draft: false
           prerelease: false
         env:
