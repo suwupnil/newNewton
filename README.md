@@ -134,9 +134,3 @@ newNewton/
 
 - **Mess Menu Upstream** — Weekly menu data maintained by [Garvit-png](https://github.com/Garvit-png).
 - **Attendance Heuristics** — Rollup math inspired and adapted from [nst-attendance](https://github.com/yats0x7/nst-attendance) by [yats0x7](https://github.com/yats0x7).
-
----
-
-## License
-
-MIT © [Swapnil](https://github.com/suwupnil)
