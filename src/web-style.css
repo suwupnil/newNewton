@@ -1,0 +1,144 @@
+@import "../extension/src/popup.css";
+
+/* Responsive Web Enhancements for newNewton Web App */
+html, body {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 100vh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+.web-viewport-wrapper {
+  width: 100%;
+  max-width: 580px;
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px 48px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .web-viewport-wrapper {
+    padding: 28px 16px 64px;
+  }
+}
+
+.popup-container {
+  width: 100% !important;
+  box-sizing: border-box;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+html.theme-dark .popup-container,
+body.theme-dark .popup-container {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Companion Target Platform Bar */
+.platform-links-bar {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.platform-links-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.platform-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.platform-link-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.platform-link-chip:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--brand-primary);
+}
+
+.platform-chip-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Portal Auth Token Web Modal / Quick Input */
+.portal-token-input-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.portal-token-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.portal-token-input:focus {
+  border-color: var(--brand-primary);
+}
+
+.btn-save-token {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-primary);
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn-save-token:hover {
+  opacity: 0.9;
+}

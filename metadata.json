@@ -1,0 +1,8 @@
+{
+  "name": "newNewton",
+  "description": "Unified campus companion and UX enhancer for Newton School of Technology (NST) featuring live Mess Menu, Attendance Tracker, Utilities, and LMS tools.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

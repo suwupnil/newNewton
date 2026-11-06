@@ -258,10 +258,7 @@ Before concluding any coding turn in this repository, verify:
     the root `build.sh` using Bash + `jq`; the separate Python generator was
     removed.
 
-## 10. Living Context & Architectural Decision Ledger
-
-- **2026-10-29 — Integrated optional local CRX packaging**:
-  - `./build.sh` now detects `.env/crx.pem` (or `CRX_PRIVATE_KEY_PATH`) and
-    creates `dist/newNewton.crx` with `npx crx3`.
-  - CRX packaging remains opt-in and is skipped when no private key is
-    present; private keys remain outside version control.
+- **2026-11-06 — Configured AI Studio Web Migration & Universal Polyfill**:
+  - Configured Vite web dev & build server targeting port 3000 (`0.0.0.0`) for AI Studio cloud container environment.
+  - Added `src/chrome-shim.js` polyfill translating `chrome.storage`, `chrome.runtime`, and `chrome.tabs` into standard browser `localStorage` and Web APIs.
+  - Linked native 4-part popup interface (Utilities, Mess Menu, Attendance, Mystery) into responsive web shell (`index.html`, `src/web-style.css`, `src/web-main.js`).

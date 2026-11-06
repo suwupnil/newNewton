@@ -1,4 +1,4 @@
-*.DS_Store
+t*.DS_Store
 dist/
 .gemini/
 macos/build/

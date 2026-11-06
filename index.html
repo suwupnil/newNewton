@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>newNewton</title>
+  <meta name="description" content="Unified campus companion and UX enhancer for Newton School of Technology (NST) featuring live Mess Menu, Attendance Tracker, Utilities, and LMS tools.">
+  <meta property="og:title" content="newNewton">
+  <meta property="og:description" content="Unified campus companion and UX enhancer for Newton School of Technology (NST) featuring live Mess Menu, Attendance Tracker, Utilities, and LMS tools.">
+  <link rel="icon" type="image/png" href="/extension/src/icons/icon48.png">
+  <script src="/extension/src/theme-init.js"></script>
+  <link rel="stylesheet" href="/src/web-style.css">
+</head>
+<body>
+  <div class="web-viewport-wrapper">
+    <div class="popup-container">
+      <!-- Top Header -->
+      <header class="header">
+        <div class="logo-group">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <h1>newNewton</h1>
+        </div>
+        <div class="header-right">
+          <a href="https://github.com/suwupnil/newNewton" target="_blank" rel="noopener noreferrer" class="github-link" title="View repository on GitHub" aria-label="GitHub Repository">
+            <svg class="github-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+          </a>
+          <a id="extVersionBadge" class="badge" href="https://github.com/suwupnil/newNewton/releases/latest" target="_blank" rel="noopener noreferrer" title="newNewton Extension Version">v1.2.2</a>
+        </div>
+      </header>
+
+      <!-- Top 4-Part Navbar -->
+      <nav class="top-navbar" role="tablist" aria-label="Extension Navigation">
+        <button type="button" class="nav-tab active" data-tab="tabUtilities" role="tab" aria-selected="true" id="navBtnUtilities">
+          <svg class="nav-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>
+          </svg>
+          <span>Utilities</span>
+        </button>
+
+        <button type="button" class="nav-tab" data-tab="tabMessMenu" role="tab" aria-selected="false" id="navBtnMess">
+          <svg class="nav-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2M15 11v11M5 2v8a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V2M7 12v10"/>
+          </svg>
+          <span>Mess Menu</span>
+        </button>
+
+        <button type="button" class="nav-tab" data-tab="tabAttendance" role="tab" aria-selected="false" id="navBtnAttendance">
+          <svg class="nav-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+            <path d="m9 16 2 2 4-4"/>
+          </svg>
+          <span>Attendance</span>
+        </button>
+
+        <button type="button" class="nav-tab" data-tab="tabMystery" role="tab" aria-selected="false" id="navBtnMystery">
+          <svg class="nav-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+          </svg>
+          <span>Mystery</span>
+        </button>
+      </nav>
+
+      <!-- Main Content Tab Panes -->
+      <main class="content">
+        <!-- 1. Utilities Tab Pane -->
+        <div class="tab-pane active" id="tabUtilities" role="tabpanel" aria-labelledby="navBtnUtilities">
+          <!-- UI Theme Card -->
+          <div class="card theme-card">
+            <div class="card-header-row">
+              <div>
+                <div class="title-row">
+                  <span class="card-title">UI Theme</span>
+                  <span class="beta-badge">Grauity</span>
+                </div>
+                <p class="card-description">Switch between Light, Dark, or System mode.</p>
+              </div>
+            </div>
+
+            <!-- 3-Segmented Pill Control -->
+            <div class="segmented-control" role="radiogroup" aria-label="Theme Selection">
+              <button type="button" class="segment-btn" data-theme="light" id="btnThemeLight">
+                <svg class="segment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <span>Light</span>
+              </button>
+
+              <button type="button" class="segment-btn" data-theme="dark" id="btnThemeDark">
+                <svg class="segment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <span>Dark</span>
+              </button>
+
+              <button type="button" class="segment-btn" data-theme="system" id="btnThemeSystem">
+                <svg class="segment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <span>System</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Telemetry & Tracking Blocker Card -->
+          <div class="card privacy-card">
+            <div class="card-header-row privacy-row">
+              <div class="privacy-header-content">
+                <div class="title-row">
+                  <span class="card-title">Telemetry & Tracking</span>
+                  <span id="telemetryStatusTag" class="theme-tag tag-blocked">Blocked</span>
+                </div>
+                <p class="card-description">Block diagnostics, session recordings & tracker pixels.</p>
+              </div>
+              <label class="switch" for="telemetryToggle" aria-label="Toggle Telemetry Blocking">
+                <input type="checkbox" id="telemetryToggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="privacy-details">
+              <div class="privacy-item" id="itemClarity">
+                <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Clarity & Session Recordings</span>
+              </div>
+              <div class="privacy-item" id="itemAnalytics">
+                <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Mixpanel, OpenPanel & CleverTap</span>
+              </div>
+              <div class="privacy-item" id="itemDiagnostics">
+                <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Diagnostic & Report Uploads</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Portal Auth Token Card (macOS App & Widget Sync) -->
+          <div class="card token-card">
+            <div class="card-header-row token-row">
+              <div class="privacy-header-content">
+                <div class="title-row">
+                  <span class="card-title">Portal Auth Token</span>
+                  <span id="authTokenStatusBadge" class="beta-badge">Connected</span>
+                </div>
+                <p class="card-description">Sync attendance and quizzes from Newton School portal or connect native widgets.</p>
+              </div>
+              <button type="button" id="btnCopyAuthToken" class="btn-copy-token" title="Copy auth-token to clipboard">
+                <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span id="btnCopyAuthTokenLabel">Copy Token</span>
+              </button>
+            </div>
+            <!-- Quick Token Input for Web Mode -->
+            <div class="portal-token-input-row">
+              <input type="password" id="webTokenInput" class="portal-token-input" placeholder="Paste Newton LMS Bearer Token here..." autocomplete="off">
+              <button type="button" id="btnSaveWebToken" class="btn-save-token">Connect</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Mess Menu Tab Pane -->
+        <div class="tab-pane" id="tabMessMenu" role="tabpanel" aria-labelledby="navBtnMess">
+          <div class="card mess-card">
+            <!-- Mess Sub-Header -->
+            <div class="mess-header-bar">
+              <div class="mess-header-left">
+                <div class="mess-day-title-row">
+                  <h2 id="messDayHeading" class="mess-day-heading">Today</h2>
+                  <span id="messDateBadge" class="mess-date-badge">Loading...</span>
+                </div>
+                <span id="messWeekStatus" class="mess-week-status">Weekly Menu • Refreshes Mondays</span>
+              </div>
+              <div class="mess-header-actions">
+                <button type="button" id="btnGoToToday" class="mess-action-btn today-btn" title="Jump to Today's Menu" style="display: none;">
+                  Today
+                </button>
+                <button type="button" id="btnRefreshMenu" class="mess-action-btn refresh-btn" title="Refresh menu from GitHub">
+                  <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                    <path d="M21 21v-5h-5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 7-Day Selector Bar -->
+            <div class="mess-days-selector" role="tablist" aria-label="Select day of the week">
+              <button type="button" class="day-btn" data-day="Monday">
+                <span class="day-abbr">Mon</span>
+                <span class="day-indicator"></span>
+              </button>
+              <button type="button" class="day-btn" data-day="Tuesday">
+                <span class="day-abbr">Tue</span>
+                <span class="day-indicator"></span>
+              </button>
+              <button type="button" class="day-btn" data-day="Wednesday">
+                <span class="day-abbr">Wed</span>
+                <span class="day-indicator"></span>
+              </button>
+              <button type="button" class="day-btn" data-day="Thursday">
+                <span class="day-abbr">Thu</span>
+                <span class="day-indicator"></span>
+              </button>
+              <button type="button" class="day-btn" data-day="Friday">
+                <span class="day-abbr">Fri</span>
+                <span class="day-indicator"></span>
+              </button>
+              <button type="button" class="day-btn" data-day="Saturday">
+                <span class="day-abbr">Sat</span>
+                <span class="day-indicator"></span>
+              </button>
+              <button type="button" class="day-btn" data-day="Sunday">
+                <span class="day-abbr">Sun</span>
+                <span class="day-indicator"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Meals Container -->
+          <div id="messMealsContainer" class="mess-meals-container">
+            <!-- Meal cards rendered dynamically via JS -->
+            <div class="mess-loading-state">
+              <div class="loading-spinner"></div>
+              <span>Loading campus menu...</span>
+            </div>
+          </div>
+
+          <!-- Attribution Footer -->
+          <div class="mess-attribution">
+            <span>Mess menu maintained by <a href="https://github.com/Garvit-png" target="_blank" rel="noopener noreferrer">Garvit-png</a></span>
+          </div>
+        </div>
+
+        <!-- 3. Attendance Tab Pane -->
+        <div class="tab-pane" id="tabAttendance" role="tabpanel" aria-labelledby="navBtnAttendance">
+          <div class="card attendance-header-card">
+            <!-- Attendance Sub-Header -->
+            <div class="mess-header-bar">
+              <div class="mess-header-left">
+                <div class="mess-day-title-row">
+                  <h2 class="mess-day-heading">Attendance</h2>
+                  <span id="attOverallBadge" class="mess-date-badge">75% Target</span>
+                </div>
+                <span id="attSyncStatus" class="mess-week-status">Checking portal data...</span>
+              </div>
+              <div class="mess-header-actions">
+                <button type="button" id="btnSyncAttendance" class="mess-action-btn refresh-btn" title="Sync attendance from portal">
+                  <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                    <path d="M21 21v-5h-5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Target Attendance Segmented Pill Buttons -->
+            <div class="att-target-bar">
+              <span class="att-target-label">Safety Target:</span>
+              <div class="att-target-pills" role="radiogroup" aria-label="Attendance Target">
+                <button type="button" class="att-target-pill active" data-target="0.75">75% (Min)</button>
+                <button type="button" class="att-target-pill" data-target="0.80">80%</button>
+                <button type="button" class="att-target-pill" data-target="0.85">85%</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attendance Subjects Container -->
+          <div id="attendanceContainer" class="attendance-container">
+            <div class="mess-loading-state">
+              <div class="loading-spinner"></div>
+              <span>Loading attendance records...</span>
+            </div>
+          </div>
+
+          <!-- Attribution Footer -->
+          <div class="attendance-attribution">
+            <span>Rollup logic powered by <a href="https://github.com/yats0x7/nst-attendance" target="_blank" rel="noopener noreferrer">nst-attendance</a> by yats0x7</span>
+          </div>
+        </div>
+
+        <!-- 4. Mystery Tab Pane -->
+        <div class="tab-pane" id="tabMystery" role="tabpanel" aria-labelledby="navBtnMystery">
+          <div class="card mystery-header-card">
+            <!-- Unsolved Sub-Header -->
+            <div class="unsolved-hero-bar">
+              <div class="unsolved-hero-left">
+                <h2 class="unsolved-hero-title">
+                  <span id="mysteryHeroCount" class="unsolved-hero-number">—</span>
+                  <span class="unsolved-hero-label">Unsolved quizzes</span>
+                </h2>
+              </div>
+              <div class="unsolved-hero-actions">
+                <button type="button" id="btnSubmitAllMystery" class="btn-submit-all-big" title="Submit all unsolved quizzes">
+                  <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Submit All</span>
+                </button>
+                <button type="button" id="btnRefreshMystery" class="mess-action-btn refresh-btn" title="Refresh unsubmitted quizzes">
+                  <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                    <path d="M21 21v-5h-5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Lazy Submit Control Section -->
+            <div class="lazy-submit-panel">
+              <div class="lazy-submit-header-row">
+                <div class="lazy-submit-title-group">
+                  <svg class="lazy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span class="lazy-submit-title">Lazy Submit</span>
+                  <span class="lazy-status-pill" id="lazyStatusPill">Off</span>
+                </div>
+                <label class="switch lazy-switch" for="toggleLazySubmit" title="Toggle human-like question submission delays">
+                  <input type="checkbox" id="toggleLazySubmit">
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <!-- Expandable Sliders for Delay & Entropy -->
+              <div class="lazy-sliders-container" id="lazySlidersContainer" style="display: none;">
+                <!-- 1. Delay Slider -->
+                <div class="lazy-slider-group">
+                  <div class="slider-header-row">
+                    <span class="slider-label">Delay per question</span>
+                    <span class="slider-val-badge" id="delayValBadge">15s</span>
+                  </div>
+                  <div class="slider-input-row">
+                    <span class="slider-bound">1s</span>
+                    <input type="range" id="delaySlider" class="lazy-range-input" min="0" max="1000" value="195" step="1" title="Question submission delay (1s to 1000s)">
+                    <span class="slider-bound">1000s</span>
+                  </div>
+                </div>
+
+                <!-- 2. Entropy Slider -->
+                <div class="lazy-slider-group">
+                  <div class="slider-header-row">
+                    <span class="slider-label">Entropy (±Jitter)</span>
+                    <span class="slider-val-badge" id="entropyValBadge">±5s</span>
+                  </div>
+                  <div class="slider-input-row">
+                    <span class="slider-bound">0s</span>
+                    <input type="range" id="entropySlider" class="lazy-range-input" min="0" max="1000" value="130" step="1" title="Entropy: assigned time ± random float from 0 to entropy">
+                    <span class="slider-bound">1000s</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Short note -->
+              <div id="lazyKeepBrowserOpenNote" class="lazy-browser-note" style="display: none;">
+                <svg class="note-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Keep the browser open during ongoing submission</span>
+              </div>
+            </div>
+
+            <!-- Live Submission Progress Banner -->
+            <div id="mysteryLiveBanner" class="mystery-live-banner" style="display: none;">
+              <div class="live-banner-content">
+                <div class="live-banner-left">
+                  <span class="live-pulse-dot"></span>
+                  <div class="live-banner-info">
+                    <span class="live-quiz-title" id="liveQuizTitle">Submitting Quiz...</span>
+                    <span class="live-status-text" id="liveStatusText">Preparing question...</span>
+                  </div>
+                </div>
+                <div class="live-banner-actions">
+                  <button type="button" id="btnPauseResume" class="btn-live-action btn-pause-resume" title="Pause submission">
+                    <svg class="live-action-icon icon-pause" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1.5"></rect>
+                      <rect x="14" y="4" width="4" height="16" rx="1.5"></rect>
+                    </svg>
+                  </button>
+                  <button type="button" id="btnFastForward" class="btn-live-action btn-fast-forward" title="Fast Forward (Submit without delay)">
+                    <svg class="live-action-icon" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="13 19 22 12 13 5 13 19"></polygon>
+                      <polygon points="2 19 11 12 2 5 2 19"></polygon>
+                    </svg>
+                  </button>
+                  <button type="button" id="btnStopSubmission" class="btn-live-action btn-stop-submission" title="Stop submission process">
+                    <svg class="live-action-icon" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="5" y="5" width="14" height="14" rx="3" ry="3"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="live-progress-track" title="Submission Progress">
+                <div class="live-progress-bar" id="liveProgressBar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Unsolved Quizzes Container -->
+          <div id="mysteryContainer" class="mystery-container">
+            <div class="mess-loading-state">
+              <div class="loading-spinner"></div>
+              <span>Checking unsubmitted quizzes...</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+      </main>
+    </div>
+
+    <!-- Companion Ecosystem Links Bar -->
+    <div class="platform-links-bar">
+      <div class="platform-links-title">
+        <span>Cross-Platform Ecosystem</span>
+        <span>Newton School of Technology</span>
+      </div>
+      <div class="platform-links-grid">
+        <a class="platform-link-chip" href="https://github.com/suwupnil/newNewton#1-browser-extensions-manifest-v3" target="_blank" rel="noopener noreferrer">
+          <svg class="platform-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+          </svg>
+          <span>Chrome MV3</span>
+        </a>
+        <a class="platform-link-chip" href="https://github.com/suwupnil/newNewton#1-browser-extensions-manifest-v3" target="_blank" rel="noopener noreferrer">
+          <svg class="platform-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12a10 10 0 0 1 10-10z"/>
+          </svg>
+          <span>Firefox MV3</span>
+        </a>
+        <a class="platform-link-chip" href="https://github.com/suwupnil/newNewton#2-macos-companion--desktop-widgets" target="_blank" rel="noopener noreferrer">
+          <svg class="platform-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.63-.78 1.07-1.85.95-2.94-.94.04-2.07.63-2.73 1.4-.58.67-1.09 1.76-.95 2.82 1.05.08 2.11-.53 2.73-1.28z"/>
+          </svg>
+          <span>macOS &amp; WidgetKit</span>
+        </a>
+        <a class="platform-link-chip" href="https://github.com/suwupnil/newNewton/tree/main/mcp-server" target="_blank" rel="noopener noreferrer">
+          <svg class="platform-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+          <span>Rust MCP Server</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/web-main.js"></script>
+</body>
+</html>
