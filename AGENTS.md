@@ -16,7 +16,7 @@
    - Read-only public assessment discovery via PostgreSQL Row-Level Security (RLS).
    - Deno Edge Function (`supabase/functions/sync-quizzes/index.ts`) using `SUPABASE_SERVICE_ROLE_KEY` to verify submissions directly against Newton LMS (`https://my.newtonschool.co`) before writing to the database.
 5. **High-Performance Rust MCP Server** (`mcp-server/`):
-   - Stdio JSON-RPC 2.0 server delivering curriculum scope checking, past 10 solved assignment style emulation, pre-submission Judge0 execution, full test grading triage, TypeSafe Jev System One language decision, and browser telemetry mirroring to LLM agents.
+   - Stdio JSON-RPC 2.0 server delivering curriculum scope checking, past 10 solved assignment style emulation, pre-submission Judge0 execution, full test grading triage, TypeSafe Jev System One language decision, browser telemetry mirroring to LLM agents, and **Supabase-powered quiz solving** (`get_pending_quizzes`, `get_quiz_questions`, `submit_quiz_answers`).
 
 ---
 
@@ -240,6 +240,14 @@ Before concluding any coding turn in this repository, verify:
 - [ ] Did you update **`AGENTS.md`** and **`CONTRIBUTING.md`** to reflect any new files or architectural changes?
 
 ## 10. Living Context & Architectural Decision Ledger
+
+- **2026-11-07 — Added Supabase-Powered Quiz & Assessment Solving Engine**:
+  - Extended the Rust MCP server (`mcp-server/`) with comprehensive assessment/quiz support across parent admin courses.
+  - Exposes 3 new tools (bringing total to 12):
+    - `get_pending_quizzes`: Discovers unsubmitted quizzes across parent admin course containers, calculates deadlines and earnable XP (halved if past deadline), reports attempt status (`NOT_STARTED` vs `IN_PROGRESS`), and cross-references Supabase for verified answers.
+    - `get_quiz_questions`: Automatically acknowledges honor code if required, opens or resumes LMS attempt sessions, and runs a 4-tier matching engine (`mcqHash` -> `questionHash` -> clean prompt text -> index fallback) against Supabase `public.quizzes`. Includes option-shuffling compensation and marks unsolved questions as `MCP_CLIENT_SOLVE` for LLM client reasoning.
+    - `submit_quiz_answers`: Saves answers individually or in batches to give client full control over timing. Supports `finalize: false` (default) to save draft answers on LMS without auto-submitting/closing the quiz, or `finalize: true` to complete the attempt.
+  - Implemented `clean_html_text`, `determine_answer_value`, and 6 isolated unit tests in `tests/test_quiz.rs` verifying 4-tier matching, shuffled options detection, numerical puzzles, and draft mode semantics.
 
 - **2026-10-30 — Implemented High-Performance Rust MCP Server**:
   - Implemented standard stdio JSON-RPC MCP server (`mcp-server/`) delivering all 7 requested LMS capabilities.

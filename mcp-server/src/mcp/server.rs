@@ -3,7 +3,7 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-use crate::api::{JevClient, Judge0Client, NewtonClient, TelemetryClient};
+use crate::api::{JevClient, Judge0Client, NewtonClient, SupabaseClient, TelemetryClient};
 use crate::mcp::protocol::{JsonRpcRequest, JsonRpcResponse};
 use crate::tools;
 
@@ -12,6 +12,7 @@ pub struct McpServer {
     judge0_client: Arc<Judge0Client>,
     jev_client: Arc<JevClient>,
     telemetry_client: Arc<TelemetryClient>,
+    supabase_client: Arc<SupabaseClient>,
 }
 
 impl McpServer {
@@ -20,12 +21,14 @@ impl McpServer {
         judge0_client: Arc<Judge0Client>,
         jev_client: Arc<JevClient>,
         telemetry_client: Arc<TelemetryClient>,
+        supabase_client: Arc<SupabaseClient>,
     ) -> Self {
         Self {
             newton_client,
             judge0_client,
             jev_client,
             telemetry_client,
+            supabase_client,
         }
     }
 
@@ -131,6 +134,7 @@ impl McpServer {
                     &self.judge0_client,
                     &self.jev_client,
                     &self.telemetry_client,
+                    &self.supabase_client,
                 )
                 .await;
 

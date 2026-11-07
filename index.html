@@ -28,7 +28,7 @@
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
             </svg>
           </a>
-          <a id="extVersionBadge" class="badge" href="https://github.com/suwupnil/newNewton/releases/latest" target="_blank" rel="noopener noreferrer" title="newNewton Extension Version">v1.2.2</a>
+          <a id="extVersionBadge" class="badge" href="https://github.com/suwupnil/newNewton/releases/latest" target="_blank" rel="noopener noreferrer" title="newNewton Extension Version">v1.4.0</a>
         </div>
       </header>
 
@@ -73,13 +73,10 @@
         <div class="tab-pane active" id="tabUtilities" role="tabpanel" aria-labelledby="navBtnUtilities">
           <!-- UI Theme Card -->
           <div class="card theme-card">
-            <div class="card-header-row">
-              <div>
-                <div class="title-row">
-                  <span class="card-title">UI Theme</span>
-                  <span class="beta-badge">Grauity</span>
-                </div>
-                <p class="card-description">Switch between Light, Dark, or System mode.</p>
+            <div class="card-header-row theme-header-row">
+              <div class="title-row">
+                <span class="card-title">UI Theme</span>
+                <span class="beta-badge">Grauity</span>
               </div>
             </div>
 
@@ -123,10 +120,10 @@
             <div class="card-header-row privacy-row">
               <div class="privacy-header-content">
                 <div class="title-row">
-                  <span class="card-title">Telemetry & Tracking</span>
+                  <span class="card-title">Telemetry &amp; Tracking</span>
                   <span id="telemetryStatusTag" class="theme-tag tag-blocked">Blocked</span>
                 </div>
-                <p class="card-description">Block diagnostics, session recordings & tracker pixels.</p>
+                <p class="card-description">Block diagnostics, session recordings &amp; tracker pixels.</p>
               </div>
               <label class="switch" for="telemetryToggle" aria-label="Toggle Telemetry Blocking">
                 <input type="checkbox" id="telemetryToggle" checked>
@@ -139,19 +136,19 @@
                 <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                <span>Clarity & Session Recordings</span>
+                <span>Clarity</span>
               </div>
               <div class="privacy-item" id="itemAnalytics">
                 <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                <span>Mixpanel, OpenPanel & CleverTap</span>
+                <span>Mixpanel &amp; OpenPanel</span>
               </div>
               <div class="privacy-item" id="itemDiagnostics">
                 <svg class="privacy-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                <span>Diagnostic & Report Uploads</span>
+                <span>Diagnostics</span>
               </div>
             </div>
           </div>
@@ -159,12 +156,9 @@
           <!-- Portal Auth Token Card (macOS App & Widget Sync) -->
           <div class="card token-card">
             <div class="card-header-row token-row">
-              <div class="privacy-header-content">
-                <div class="title-row">
-                  <span class="card-title">Portal Auth Token</span>
-                  <span id="authTokenStatusBadge" class="beta-badge">Connected</span>
-                </div>
-                <p class="card-description">Sync attendance and quizzes from Newton School portal or connect native widgets.</p>
+              <div class="title-row">
+                <span class="card-title">Portal Auth Token</span>
+                <span id="authTokenStatusBadge" class="beta-badge">Connected</span>
               </div>
               <button type="button" id="btnCopyAuthToken" class="btn-copy-token" title="Copy auth-token to clipboard">
                 <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

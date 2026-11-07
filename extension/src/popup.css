@@ -358,6 +358,10 @@ html.theme-light .badge-update-available {
   animation: tabFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+#tabUtilities.tab-pane.active {
+  gap: 10px;
+}
+
 @keyframes tabFadeIn {
   from {
     opacity: 0;
@@ -374,47 +378,55 @@ html.theme-light .badge-update-available {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 13px;
+  padding: 11px 13px;
   box-shadow: var(--shadow-sm);
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .card-header-row {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  white-space: nowrap;
   margin-bottom: 2px;
 }
 
 .card-title {
   font-weight: 650;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .theme-tag {
   font-size: 10px;
   font-weight: 650;
-  padding: 1px 6px;
+  padding: 1.5px 6px;
   border-radius: 4px;
   background-color: var(--bg-hover);
   color: var(--text-secondary);
+  white-space: nowrap;
+  line-height: 1.2;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
 .beta-badge {
   font-size: 10px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 1.5px 6px;
   border-radius: 4px;
   background-color: var(--brand-light);
   color: var(--brand-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .tag-blocked {
@@ -428,7 +440,7 @@ html.theme-light .badge-update-available {
 }
 
 .card-description {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
   line-height: 1.35;
 }
@@ -483,19 +495,20 @@ html.theme-light .badge-update-available {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 0;
 }
 
 .privacy-header-content {
   flex: 1;
-  padding-right: 12px;
+  min-width: 0;
 }
 
 .switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 40px;
+  height: 22px;
   flex-shrink: 0;
 }
 
@@ -514,14 +527,14 @@ html.theme-light .badge-update-available {
   bottom: 0;
   background-color: var(--border-color);
   transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 24px;
+  border-radius: 22px;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
+  height: 16px;
+  width: 16px;
   left: 3px;
   bottom: 3px;
   background-color: #ffffff;
@@ -535,23 +548,25 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-  transform: translateX(20px);
+  transform: translateX(18px);
 }
 
 .privacy-details {
   display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding-top: 10px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-top: 8px;
+  margin-top: 8px;
   border-top: 1px solid var(--border-color);
 }
 
 .privacy-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
+  gap: 4px;
+  font-size: 11px;
   color: var(--text-secondary);
+  white-space: nowrap;
   transition: opacity 0.2s ease, color 0.2s ease;
 }
 
@@ -561,8 +576,8 @@ input:checked + .slider:before {
 }
 
 .privacy-item-icon {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   color: var(--success-color);
   flex-shrink: 0;
 }
@@ -2561,17 +2576,17 @@ details.missed-details[open] .chevron-icon {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0;
-  gap: 10px;
+  margin-bottom: 5px;
+  gap: 8px;
 }
 
 .btn-copy-token {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  font-size: 12px;
+  gap: 5px;
+  padding: 4.5px 10px;
+  font-size: 11px;
   font-weight: 650;
   border-radius: var(--radius-sm);
   background-color: var(--brand-light);
@@ -2596,8 +2611,8 @@ details.missed-details[open] .chevron-icon {
 }
 
 .copy-icon {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
 }
 

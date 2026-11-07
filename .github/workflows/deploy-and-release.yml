@@ -68,6 +68,10 @@ jobs:
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             archive: tar.gz
+          - name: linux-arm64
+            runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
           - name: macos-arm64
             runner: macos-14
             target: aarch64-apple-darwin
@@ -87,6 +91,9 @@ jobs:
         run: |
           VERSION=$(grep -m1 '"version"' extension/manifest.json | sed -E 's/.*"version": "([^"]+)".*/\1/')
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Rust Target
+        run: rustup target add ${{ matrix.target }}
 
       - name: Build Release Binary
         run: cargo build --locked --release --manifest-path mcp-server/Cargo.toml --target ${{ matrix.target }}
@@ -145,7 +152,7 @@ jobs:
             Included artifacts:
             - Chrome Extension (.crx, .zip)
             - Mozilla Firefox Extension (.xpi)
-            - Newton MCP Server binaries for Linux x86_64, macOS Apple Silicon, and Windows x86_64
+            - Newton MCP Server binaries for Linux x86_64, Linux ARM64, macOS Apple Silicon, and Windows x86_64
 
             The macOS companion application and widgets are not included in this release.
           files: release-assets/*

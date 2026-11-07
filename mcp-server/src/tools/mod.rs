@@ -1,8 +1,11 @@
 pub mod course_scope;
 pub mod decide_language;
 pub mod pending_assignments;
+pub mod pending_quizzes;
 pub mod problem_details;
+pub mod quiz_questions;
 pub mod run_code;
+pub mod submit_quiz;
 pub mod submit_solution;
 pub mod telemetry_control;
 pub mod user_style;
@@ -10,7 +13,7 @@ pub mod user_style;
 use serde_json::Value;
 use std::sync::Arc;
 
-use crate::api::{JevClient, Judge0Client, NewtonClient, TelemetryClient};
+use crate::api::{JevClient, Judge0Client, NewtonClient, SupabaseClient, TelemetryClient};
 use crate::mcp::protocol::{CallToolResult, Tool};
 
 pub fn list_tools() -> Vec<Tool> {
@@ -24,6 +27,9 @@ pub fn list_tools() -> Vec<Tool> {
         problem_details::tool_definition(),
         telemetry_control::save_code_tool_definition(),
         telemetry_control::configure_tool_definition(),
+        pending_quizzes::tool_definition(),
+        quiz_questions::tool_definition(),
+        submit_quiz::tool_definition(),
     ]
 }
 
@@ -34,6 +40,7 @@ pub async fn call_tool(
     judge0_client: &Arc<Judge0Client>,
     jev_client: &Arc<JevClient>,
     telemetry_client: &Arc<TelemetryClient>,
+    supabase_client: &Arc<SupabaseClient>,
 ) -> CallToolResult {
     match name {
         "get_course_scope" => course_scope::execute(newton_client, args).await,
@@ -55,6 +62,15 @@ pub async fn call_tool(
             telemetry_control::execute_save(newton_client, telemetry_client, args).await
         }
         "configure_telemetry" => telemetry_control::execute_configure(telemetry_client, args).await,
+        "get_pending_quizzes" | "list_quizzes" => {
+            pending_quizzes::execute(newton_client, supabase_client, args).await
+        }
+        "get_quiz_questions" | "get_assessment_questions" => {
+            quiz_questions::execute(newton_client, supabase_client, args).await
+        }
+        "submit_quiz_answers" | "save_quiz_answers" => {
+            submit_quiz::execute(newton_client, args).await
+        }
         unknown => CallToolResult::error(format!("Unknown tool: {}", unknown)),
     }
 }

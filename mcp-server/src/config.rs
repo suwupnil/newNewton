@@ -8,6 +8,8 @@ pub struct Config {
     pub auth_token: String,
     pub parent_course_hash: Option<String>,
     pub typesafe_api_key: Option<String>,
+    pub supabase_url: String,
+    pub supabase_anon_key: String,
     pub lms_base_url: String,
     pub judge0_base_url: String,
     pub jev_base_url: String,
@@ -24,6 +26,12 @@ impl Config {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
+        let supabase_url = std::env::var("SUPABASE_URL")
+            .unwrap_or_else(|_| "https://wwxqskccvcpimcgctskm.supabase.co".to_string());
+        let supabase_anon_key = std::env::var("SUPABASE_ANON_KEY").unwrap_or_else(|_| {
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3eHFza2NjdmNwaW1jZ2N0c2ttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MjM2MjgsImV4cCI6MjEwNzI5OTYyOH0.uEXGkzcIXbqyU5lRnFVyAF0c04YI0SoED6p98EYrbcc".to_string()
+        });
+
         let lms_base_url = std::env::var("NEWTON_LMS_URL")
             .unwrap_or_else(|_| "https://my.newtonschool.co".to_string());
         let judge0_base_url = std::env::var("NEWTON_JUDGE0_URL")
@@ -39,6 +47,8 @@ impl Config {
             auth_token,
             parent_course_hash,
             typesafe_api_key,
+            supabase_url,
+            supabase_anon_key,
             lms_base_url,
             judge0_base_url,
             jev_base_url,

@@ -14,6 +14,7 @@ pub struct NewtonClient {
     cached_parent_course_hash: Arc<RwLock<Option<String>>>,
     cached_username: Arc<RwLock<Option<String>>>,
     cached_assignment_courses: Arc<RwLock<std::collections::HashMap<String, String>>>,
+    cached_assessment_courses: Arc<RwLock<std::collections::HashMap<String, String>>>,
 }
 
 #[allow(dead_code)]
@@ -44,6 +45,7 @@ impl NewtonClient {
             cached_parent_course_hash: Arc::new(RwLock::new(initial_course)),
             cached_username: Arc::new(RwLock::new(None)),
             cached_assignment_courses: Arc::new(RwLock::new(std::collections::HashMap::new())),
+            cached_assessment_courses: Arc::new(RwLock::new(std::collections::HashMap::new())),
         })
     }
 
@@ -402,5 +404,267 @@ impl NewtonClient {
         }
         let submission: LatestSubmissionResponse = resp.json().await?;
         Ok(submission)
+    }
+
+    pub async fn get_assessments(&self, course_hash: &str) -> Result<Vec<AssessmentItem>> {
+        let url = format!(
+            "{}/api/v2/course/h/{}/assessment/all/?pagination=false",
+            self.config.lms_base_url, course_hash
+        );
+        let resp = self.client.get(&url).send().await?;
+
+        let items: Vec<AssessmentItem> = if resp.status().is_success() {
+            let data: Value = resp.json().await?;
+            if let Some(arr) = data.as_array() {
+                serde_json::from_value(Value::Array(arr.clone())).unwrap_or_default()
+            } else if let Some(results) = data.get("results").and_then(|r| r.as_array()) {
+                serde_json::from_value(Value::Array(results.clone())).unwrap_or_default()
+            } else {
+                Vec::new()
+            }
+        } else {
+            // Fallback to paginated endpoint
+            let paged_url = format!(
+                "{}/api/v2/course/h/{}/assessment/all/?limit=100&offset=0",
+                self.config.lms_base_url, course_hash
+            );
+            let paged_resp = self.client.get(&paged_url).send().await?;
+            if !paged_resp.status().is_success() {
+                return Err(anyhow!(
+                    "Failed to fetch assessments for {}: HTTP {}",
+                    course_hash,
+                    paged_resp.status()
+                ));
+            }
+            let list: AssessmentListResponse = paged_resp.json().await?;
+            list.results
+        };
+
+        // Cache child course associations for fast lookup
+        {
+            let mut cache = self.cached_assessment_courses.write().await;
+            for item in &items {
+                if let Some(sub) = &item.course {
+                    cache.insert(item.hash.clone(), sub.hash.clone());
+                } else {
+                    cache.insert(item.hash.clone(), course_hash.to_string());
+                }
+            }
+        }
+
+        Ok(items)
+    }
+
+    pub async fn get_assessment_instructions(
+        &self,
+        course_hash: &str,
+        assessment_hash: &str,
+    ) -> Result<AssessmentInstructionsResponse> {
+        let url = format!(
+            "{}/api/v1/course/h/{}/assessment/h/{}/instructions/",
+            self.config.lms_base_url, course_hash, assessment_hash
+        );
+        let resp = self.client.get(&url).send().await?;
+        if !resp.status().is_success() {
+            return Err(anyhow!(
+                "Failed to fetch instructions for assessment {}: HTTP {}",
+                assessment_hash,
+                resp.status()
+            ));
+        }
+        let instr: AssessmentInstructionsResponse = resp.json().await?;
+        Ok(instr)
+    }
+
+    pub async fn acknowledge_honor_code(
+        &self,
+        course_hash: &str,
+        assessment_hash: &str,
+    ) -> Result<()> {
+        let url = format!(
+            "{}/api/v1/integrated_assessments/{}/h/{}/honor_code/",
+            self.config.lms_base_url, course_hash, assessment_hash
+        );
+        let resp = self
+            .client
+            .post(&url)
+            .json(&serde_json::json!({ "acknowledged": true }))
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            return Err(anyhow!(
+                "Failed to acknowledge honor code for assessment {}: HTTP {}",
+                assessment_hash,
+                resp.status()
+            ));
+        }
+        Ok(())
+    }
+
+    pub async fn get_quiz_session(
+        &self,
+        course_hash: &str,
+        assessment_hash: &str,
+    ) -> Result<QuizQuestionsResponse> {
+        // Step 1: Check instructions and acknowledge honor code if needed
+        if let Ok(instr) = self.get_assessment_instructions(course_hash, assessment_hash).await {
+            if instr.honor_code && !instr.has_acknowledged_honor_code {
+                let _ = self.acknowledge_honor_code(course_hash, assessment_hash).await;
+            }
+        }
+
+        // Step 2: Try starting a new attempt
+        let new_attempt_url = format!(
+            "{}/api/v1/course/h/{}/assessment/h/{}/questions/?new_attempt=true",
+            self.config.lms_base_url, course_hash, assessment_hash
+        );
+
+        if let Ok(resp) = self.client.get(&new_attempt_url).send().await {
+            if resp.status().is_success() {
+                if let Ok(session) = resp.json::<QuizQuestionsResponse>().await {
+                    if !session.questions.is_empty() {
+                        return Ok(session);
+                    }
+                }
+            }
+        }
+
+        // Step 3: Resume existing attempt session
+        let resume_url = format!(
+            "{}/api/v1/course/h/{}/assessment/h/{}/questions/",
+            self.config.lms_base_url, course_hash, assessment_hash
+        );
+        let resume_resp = self.client.get(&resume_url).send().await?;
+        if !resume_resp.status().is_success() {
+            return Err(anyhow!(
+                "Failed to access quiz session for assessment {}: HTTP {}",
+                assessment_hash,
+                resume_resp.status()
+            ));
+        }
+
+        let session: QuizQuestionsResponse = resume_resp.json().await?;
+        Ok(session)
+    }
+
+    pub async fn save_quiz_question(
+        &self,
+        course_hash: &str,
+        assessment_hash: &str,
+        question_hash: &str,
+        value: Option<&str>,
+        input_answer: Option<&str>,
+        client_marked_at: Option<i64>,
+    ) -> Result<Value> {
+        let url = format!(
+            "{}/api/v1/course/h/{}/assessment/h/{}/question/",
+            self.config.lms_base_url, course_hash, assessment_hash
+        );
+
+        let marked_at = client_marked_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
+        let payload = SaveQuizQuestionPayload {
+            hash: question_hash.to_string(),
+            value: value.map(|s| s.to_string()),
+            input_answer: input_answer.map(|s| s.to_string()),
+            client_marked_at: Some(marked_at),
+        };
+
+        let resp = self.client.post(&url).json(&payload).send().await?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(anyhow!(
+                "Failed to save quiz question {}: HTTP {} - {}",
+                question_hash,
+                status,
+                body
+            ));
+        }
+
+        let result: Value = resp
+            .json()
+            .await
+            .unwrap_or(serde_json::json!({ "status": "saved" }));
+        Ok(result)
+    }
+
+    pub async fn finalize_quiz(
+        &self,
+        course_hash: &str,
+        assessment_hash: &str,
+    ) -> Result<Value> {
+        let url = format!(
+            "{}/api/v1/course/h/{}/assessment/h/{}/questions/?auto_submit=false",
+            self.config.lms_base_url, course_hash, assessment_hash
+        );
+
+        let resp = self
+            .client
+            .post(&url)
+            .json(&serde_json::json!({}))
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(anyhow!(
+                "Failed to finalize quiz assessment {}: HTTP {} - {}",
+                assessment_hash,
+                status,
+                body
+            ));
+        }
+
+        let result: Value = resp
+            .json()
+            .await
+            .unwrap_or(serde_json::json!({ "status": "submitted" }));
+        Ok(result)
+    }
+
+    pub async fn resolve_assessment_course_hash(
+        &self,
+        course_hash: &str,
+        assessment_hash: &str,
+    ) -> Result<String> {
+        // 1. Direct check in cached assessment mappings
+        {
+            let cache = self.cached_assessment_courses.read().await;
+            if let Some(sub) = cache.get(assessment_hash) {
+                return Ok(sub.clone());
+            }
+        }
+
+        // 2. Query assessments for current course container to populate cache
+        if let Ok(assessments) = self.get_assessments(course_hash).await {
+            for a in assessments {
+                if a.hash == assessment_hash {
+                    if let Some(sub) = a.course {
+                        return Ok(sub.hash);
+                    }
+                    return Ok(course_hash.to_string());
+                }
+            }
+        }
+
+        // 3. Fallback: probe learning courses
+        if let Ok(learning_courses) = self.get_learning_courses(course_hash).await {
+            for sub in learning_courses {
+                if let Ok(sub_assessments) = self.get_assessments(&sub.hash).await {
+                    for a in sub_assessments {
+                        if a.hash == assessment_hash {
+                            let mut cache = self.cached_assessment_courses.write().await;
+                            cache.insert(assessment_hash.to_string(), sub.hash.clone());
+                            return Ok(sub.hash);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Default to passed course hash
+        Ok(course_hash.to_string())
     }
 }

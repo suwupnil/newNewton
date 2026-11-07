@@ -7,14 +7,14 @@ mod tools;
 use anyhow::{Context, Result};
 use std::sync::Arc;
 
-use crate::api::{JevClient, Judge0Client, NewtonClient, TelemetryClient};
+use crate::api::{JevClient, Judge0Client, NewtonClient, SupabaseClient, TelemetryClient};
 use crate::config::Config;
 use crate::mcp::server::McpServer;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Write diagnostics solely to stderr to avoid polluting stdout JSON-RPC
-    eprintln!("[newton-mcp-server] Starting Newton LMS Assignment Solver MCP Server v0.1.0...");
+    eprintln!("[newton-mcp-server] Starting Newton LMS Assignment & Quiz Solver MCP Server v0.2.0...");
 
     let config = Arc::new(Config::load().map_err(|e| {
         eprintln!("[newton-mcp-server] Configuration error: {}", e);
@@ -24,6 +24,10 @@ async fn main() -> Result<()> {
     eprintln!(
         "[newton-mcp-server] Auth token loaded. Connecting to LMS: {}",
         config.lms_base_url
+    );
+    eprintln!(
+        "[newton-mcp-server] Supabase verified quiz database: {}",
+        config.supabase_url
     );
     if config.typesafe_api_key.is_some() {
         eprintln!("[newton-mcp-server] TypeSafe Jev System One engine: ENABLED");
@@ -46,6 +50,9 @@ async fn main() -> Result<()> {
         Arc::new(Judge0Client::new(config.clone()).context("Failed to initialize Judge0 client")?);
     let jev_client = Arc::new(JevClient::new(config.clone()));
     let telemetry_client = Arc::new(TelemetryClient::new(config.clone()));
+    let supabase_client = Arc::new(
+        SupabaseClient::new(config.clone()).context("Failed to initialize Supabase client")?,
+    );
 
     // Warm-up parent course discovery asynchronously in background
     let client_for_warmup = newton_client.clone();
@@ -62,7 +69,13 @@ async fn main() -> Result<()> {
         }
     });
 
-    let server = McpServer::new(newton_client, judge0_client, jev_client, telemetry_client);
+    let server = McpServer::new(
+        newton_client,
+        judge0_client,
+        jev_client,
+        telemetry_client,
+        supabase_client,
+    );
     server.run().await?;
 
     Ok(())
