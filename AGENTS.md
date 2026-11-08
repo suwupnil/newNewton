@@ -241,6 +241,11 @@ Before concluding any coding turn in this repository, verify:
 
 ## 10. Living Context & Architectural Decision Ledger
 
+- **2026-11-08 — Cloudflare Worker Reverse Proxy for Datacenter / Cloud VM Bypass**:
+  - Implemented zero-dependency Cloudflare Worker reverse proxy (`mcp-server/proxy/worker.js`) to route LMS and Judge0 API calls through Cloudflare's CDN edge network, bypassing AWS WAF / ALB IP bans on Oracle Cloud Infrastructure (OCI) and other VPS hosts.
+  - Automatically discriminates paths: routes `/submissions/*` to `judge0-public.newtonschool.co` and all other API calls to `my.newtonschool.co`.
+  - Added support for `NEWTON_PROXY_SECRET` (passes `x-proxy-secret` header) and `NEWTON_USER_AGENT` (defaults to authentic desktop Chrome browser user-agent) in `mcp-server/src/config.rs`, `mcp-server/src/api/client.rs`, and `mcp-server/src/api/judge0.rs`.
+
 - **2026-11-07 — Added Supabase-Powered Quiz & Assessment Solving Engine**:
   - Extended the Rust MCP server (`mcp-server/`) with comprehensive assessment/quiz support across parent admin courses.
   - Exposes 3 new tools (bringing total to 12):

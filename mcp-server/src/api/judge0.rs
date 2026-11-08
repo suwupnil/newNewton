@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use base64::prelude::*;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, USER_AGENT};
+use reqwest::header::{
+    HeaderMap, HeaderName, HeaderValue, AUTHORIZATION, CONTENT_TYPE, ORIGIN, REFERER, USER_AGENT,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
@@ -38,8 +40,23 @@ impl Judge0Client {
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         headers.insert(
             USER_AGENT,
-            HeaderValue::from_static("newton-enhancer-mcp/0.1.0"),
+            HeaderValue::from_str(&config.user_agent)
+                .map_err(|e| anyhow!("Invalid user agent header: {}", e))?,
         );
+        headers.insert(
+            ORIGIN,
+            HeaderValue::from_static("https://judge0-public.newtonschool.co"),
+        );
+        headers.insert(
+            REFERER,
+            HeaderValue::from_static("https://judge0-public.newtonschool.co/"),
+        );
+
+        if let Some(ref secret) = config.proxy_secret {
+            if let Ok(val) = HeaderValue::from_str(secret) {
+                headers.insert(HeaderName::from_static("x-proxy-secret"), val);
+            }
+        }
 
         let client = reqwest::Client::builder()
             .default_headers(headers)

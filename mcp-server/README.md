@@ -101,8 +101,12 @@ When an agent calls `get_problem_details`, the response automatically includes:
 | `SUPABASE_ANON_KEY` | Public anon key for PostgreSQL PostgREST queries | Canonical public anon key |
 | `TYPESAFE_API_KEY` | Optional API key for TypeSafe Jev System One | If unset, MCP client decides language |
 | `NEWTON_ENABLE_TELEMETRY` | Enable browser telemetry mirroring (`true`/`false`) | `false` (Strict minimal REST) |
-| `NEWTON_LMS_URL` | Base LMS URL | `https://my.newtonschool.co` |
-| `NEWTON_JUDGE0_URL` | Base Judge0 cluster URL | `https://judge0-public.newtonschool.co` |
+| `NEWTON_LMS_URL` | Base LMS URL | `https://my.newtonschool.co` (or your Cloudflare Worker URL) |
+| `NEWTON_JUDGE0_URL` | Base Judge0 cluster URL | `https://judge0-public.newtonschool.co` (or your Cloudflare Worker URL) |
+| `NEWTON_PROXY_SECRET` | Optional proxy authorization secret passed in `x-proxy-secret` | None (Optional) |
+| `NEWTON_USER_AGENT` | Custom User-Agent header for HTTP requests | Desktop Chrome browser user agent |
+
+> **Bypassing Cloud VM & Oracle Cloud Blocks**: If running the MCP server in Oracle Cloud, AWS, GCP, or a VPS where Newton blocks cloud datacenter IPs, deploy the included 0-dependency Cloudflare Worker reverse proxy in [`mcp-server/proxy/`](proxy/README.md). It routes LMS and Judge0 requests through Cloudflare's trusted CDN network.
 
 ---
 

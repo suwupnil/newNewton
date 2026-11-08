@@ -13,6 +13,8 @@ pub struct Config {
     pub lms_base_url: String,
     pub judge0_base_url: String,
     pub jev_base_url: String,
+    pub proxy_secret: Option<String>,
+    pub user_agent: String,
     pub telemetry_enabled: Arc<AtomicBool>,
 }
 
@@ -39,6 +41,13 @@ impl Config {
         let jev_base_url = std::env::var("TYPESAFE_JEV_URL")
             .unwrap_or_else(|_| "https://api.typesafe.ai/v1/systemone".to_string());
 
+        let proxy_secret = std::env::var("NEWTON_PROXY_SECRET")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+        let user_agent = std::env::var("NEWTON_USER_AGENT").unwrap_or_else(|_| {
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36".to_string()
+        });
+
         let telemetry_initial = std::env::var("NEWTON_ENABLE_TELEMETRY")
             .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
             .unwrap_or(false);
@@ -52,6 +61,8 @@ impl Config {
             lms_base_url,
             judge0_base_url,
             jev_base_url,
+            proxy_secret,
+            user_agent,
             telemetry_enabled: Arc::new(AtomicBool::new(telemetry_initial)),
         })
     }
