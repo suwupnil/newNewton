@@ -7,6 +7,11 @@ pub struct UserProfile {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub email: Option<String>,
+    pub phone: Option<String>,
+    pub batch: Option<String>,
+    pub role: Option<String>,
+    #[serde(default)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

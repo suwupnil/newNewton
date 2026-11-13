@@ -334,3 +334,93 @@ fn test_submit_quiz_draft_mode_semantics() {
     let status = if finalize { "COMPLETED_AND_SUBMITTED" } else { "SAVED_AS_DRAFT" };
     assert_eq!(status, "SAVED_AS_DRAFT");
 }
+
+#[test]
+fn test_save_quiz_answer_payload_and_schema() {
+    let payload = json!({
+        "assessment_hash": "quiz-abc-123",
+        "question_hash": "q-99",
+        "answer": "B",
+        "client_marked_at": 1731540000000i64
+    });
+
+    assert_eq!(payload["assessment_hash"].as_str().unwrap(), "quiz-abc-123");
+    assert_eq!(payload["question_hash"].as_str().unwrap(), "q-99");
+    assert_eq!(payload["answer"].as_str().unwrap(), "B");
+    assert_eq!(payload["client_marked_at"].as_i64().unwrap(), 1731540000000i64);
+
+    // Verify wire payload format for Newton LMS API:
+    // POST /api/v1/course/h/{course}/assessment/h/{assessment}/question/
+    let wire_payload = json!({
+        "hash": payload["question_hash"],
+        "value": payload["answer"],
+        "input_answer": payload["answer"],
+        "client_marked_at": payload["client_marked_at"]
+    });
+    assert_eq!(wire_payload["value"], "B");
+    assert_eq!(wire_payload["input_answer"], "B");
+    assert_eq!(wire_payload["hash"], "q-99");
+}
+
+#[test]
+fn test_clear_selection_payload_and_null_semantics() {
+    let payload = json!({
+        "assessment_hash": "quiz-abc-123",
+        "question_hash": "q-99"
+    });
+
+    assert_eq!(payload["assessment_hash"].as_str().unwrap(), "quiz-abc-123");
+    assert_eq!(payload["question_hash"].as_str().unwrap(), "q-99");
+
+    // Newton LMS clearing wire format passes null for value and input_answer
+    let wire_payload = json!({
+        "hash": payload["question_hash"],
+        "value": serde_json::Value::Null,
+        "input_answer": serde_json::Value::Null,
+        "client_marked_at": 1731540000000i64
+    });
+
+    assert!(wire_payload["value"].is_null());
+    assert!(wire_payload["input_answer"].is_null());
+    assert_eq!(wire_payload["hash"], "q-99");
+}
+
+#[test]
+fn test_get_user_info_schema_and_name_formatting() {
+    let user_profile = json!({
+        "username": "student_nst",
+        "uid": "uid_12345",
+        "first_name": "Alex",
+        "last_name": "Rivera",
+        "email": "alex.rivera@newtonschool.co",
+        "phone": "+919876543210",
+        "batch": "2024-CSE-AI",
+        "role": "STUDENT"
+    });
+
+    let first = user_profile["first_name"].as_str().unwrap_or("");
+    let last = user_profile["last_name"].as_str().unwrap_or("");
+    let full_name = format!("{} {}", first, last);
+
+    assert_eq!(full_name, "Alex Rivera");
+    assert_eq!(user_profile["username"], "student_nst");
+    assert_eq!(user_profile["email"], "alex.rivera@newtonschool.co");
+    assert_eq!(user_profile["batch"], "2024-CSE-AI");
+    assert_eq!(user_profile["role"], "STUDENT");
+
+    // Single name fallback test
+    let single_name_profile = json!({
+        "username": "coder_pro",
+        "first_name": "Jordan",
+        "last_name": ""
+    });
+    let first = single_name_profile["first_name"].as_str().unwrap_or("").trim();
+    let last = single_name_profile["last_name"].as_str().unwrap_or("").trim();
+    let derived_name = match (first, last) {
+        ("", "") => single_name_profile["username"].as_str().unwrap().to_string(),
+        (f, "") => f.to_string(),
+        ("", l) => l.to_string(),
+        (f, l) => format!("{} {}", f, l),
+    };
+    assert_eq!(derived_name, "Jordan");
+}

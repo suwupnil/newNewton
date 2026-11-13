@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         config.lms_base_url
     );
     eprintln!(
-        "[newton-mcp-server] Supabase verified quiz database: {}",
+        "[newton-mcp-server] newNewton solutions database: {}",
         config.supabase_url
     );
     if config.typesafe_api_key.is_some() {

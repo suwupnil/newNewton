@@ -43,10 +43,11 @@ A high-performance, low-memory Model Context Protocol (MCP) server written in **
 8. **Browser Telemetry Mirroring vs. Minimal REST (`save_editor_code`, `configure_telemetry`)**:
    - Supports toggling between strictly minimal REST (zero tracking) or mirroring browser editor save events (`editor_save_event` to AWS ECS and OpenPanel).
 
-9. **Supabase-Powered Quiz & Assessment Solving Hierarchy (`get_pending_quizzes`, `get_quiz_questions`, `submit_quiz_answers`)**:
-   - **Hierarchy Tier 1 (Verified Supabase Lookups)**: Automatically queries Supabase `public.quizzes` (Mumbai `ap-south-1`) with a 4-tier matching engine (`mcqHash` -> `questionHash` -> clean prompt text -> index fallback) and option-shuffling compensation.
-   - **Hierarchy Tier 2 (MCP Client Fallback)**: Any question not in Supabase is clearly flagged (`MCP_CLIENT_SOLVE`) with clean prompt and options for the LLM agent to think and answer.
-   - **Safe Draft & Finalize Control**: `submit_quiz_answers` supports saving questions individually or in batches. With `finalize: false` (default), answers are saved as drafts on LMS without completing the quiz. With `finalize: true`, the attempt is finalized and graded.
+9. **newNewton's Solutions Quiz & Assessment Solving Hierarchy (`get_pending_quizzes`, `get_quiz_questions`, `save_quiz_answer`, `clear_selection`, `submit_quiz_answers`, `get_user_info`)**:
+   - **Hierarchy Tier 1 (Verified newNewton Solutions Lookups)**: Automatically queries newNewton's verified assessment database with a 4-tier matching engine (`mcqHash` -> `questionHash` -> clean prompt text -> index fallback) and option-shuffling compensation.
+   - **Hierarchy Tier 2 (MCP Client Fallback)**: Any question not in newNewton's solutions is clearly flagged (`MCP_CLIENT_SOLVE`) with clean prompt and options for the LLM agent to think and answer.
+   - **Safe Draft & Finalize Control**: `save_quiz_answer` saves individual question drafts without finalizing. `clear_selection` clears/unsets chosen options. `submit_quiz_answers` supports saving questions individually or in batches, with `finalize: false` (default) for saving drafts or `finalize: true` to finalize and submit.
+   - **User Profile Discovery**: `get_user_info` allows the MCP client to inspect the authenticated student's profile (name, username, UID, email, phone, role, batch).
 
 ---
 
@@ -97,8 +98,8 @@ When an agent calls `get_problem_details`, the response automatically includes:
 | :--- | :--- | :--- |
 | `NEWTON_AUTH_TOKEN` | Bearer token for Newton LMS API | Loaded automatically from `.env/auth.key`, `~/.config/newton/auth.key`, or relative to binary |
 | `NEWTON_PARENT_COURSE_HASH` | Target parent admin course hash | Auto-detected from user's enrolled courses |
-| `SUPABASE_URL` | Supabase endpoint for verified quiz archive | `https://wwxqskccvcpimcgctskm.supabase.co` |
-| `SUPABASE_ANON_KEY` | Public anon key for PostgreSQL PostgREST queries | Canonical public anon key |
+| `SUPABASE_URL` | Endpoint for newNewton's verified assessment database | `https://wwxqskccvcpimcgctskm.supabase.co` |
+| `SUPABASE_ANON_KEY` | Public anon key for newNewton solutions database queries | Canonical public anon key |
 | `TYPESAFE_API_KEY` | Optional API key for TypeSafe Jev System One | If unset, MCP client decides language |
 | `NEWTON_ENABLE_TELEMETRY` | Enable browser telemetry mirroring (`true`/`false`) | `false` (Strict minimal REST) |
 | `NEWTON_LMS_URL` | Base LMS URL | `https://my.newtonschool.co` (or your Cloudflare Worker URL) |
@@ -112,7 +113,7 @@ When an agent calls `get_problem_details`, the response automatically includes:
 
 ## 4. Tool Surface & Aliases
 
-The server exposes 12 primary tools (plus short aliases for LLM compatibility):
+The server exposes 15 primary tools (plus short aliases for LLM compatibility):
 
 ```json
 [
@@ -158,17 +159,32 @@ The server exposes 12 primary tools (plus short aliases for LLM compatibility):
   {
     "name": "get_pending_quizzes",
     "aliases": ["list_quizzes"],
-    "description": "Retrieves unsubmitted quizzes/assessments with deadline calculation, earnable XP, attempt status, and Supabase solution availability."
+    "description": "Retrieves unsubmitted quizzes/assessments with deadline calculation, earnable XP, attempt status, and newNewton's solutions availability."
   },
   {
     "name": "get_quiz_questions",
     "aliases": ["get_assessment_questions"],
-    "description": "Opens/resumes quiz session, matches against Supabase verified database with option shuffling compensation, and marks unsolved questions for client LLM reasoning."
+    "description": "Opens/resumes quiz session, matches against newNewton's solutions database with option shuffling compensation, and marks unsolved questions for client LLM reasoning."
+  },
+  {
+    "name": "save_quiz_answer",
+    "aliases": ["save_assessment_answer"],
+    "description": "Saves a draft answer for an individual quiz question on Newton LMS without completing the quiz."
+  },
+  {
+    "name": "clear_selection",
+    "aliases": ["clear_quiz_selection", "clear_answer"],
+    "description": "Clears or unselects the previously chosen option or fill-in-blanks answer for a specific quiz question."
   },
   {
     "name": "submit_quiz_answers",
     "aliases": ["save_quiz_answers"],
     "description": "Saves answers on LMS in individual or batch mode. Supports saving drafts without completing (finalize: false) and final submission (finalize: true)."
+  },
+  {
+    "name": "get_user_info",
+    "aliases": ["get_user_profile", "user_info"],
+    "description": "Retrieves student profile details (username, UID, full name, email, phone, role, batch) from Newton LMS."
   }
 ]
 ```

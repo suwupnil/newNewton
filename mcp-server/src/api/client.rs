@@ -606,6 +606,44 @@ impl NewtonClient {
         Ok(result)
     }
 
+    pub async fn clear_quiz_question(
+        &self,
+        course_hash: &str,
+        assessment_hash: &str,
+        question_hash: &str,
+    ) -> Result<Value> {
+        let url = format!(
+            "{}/api/v1/course/h/{}/assessment/h/{}/question/",
+            self.config.lms_base_url, course_hash, assessment_hash
+        );
+
+        let marked_at = chrono::Utc::now().timestamp_millis();
+        let payload = serde_json::json!({
+            "hash": question_hash,
+            "value": serde_json::Value::Null,
+            "input_answer": serde_json::Value::Null,
+            "client_marked_at": marked_at
+        });
+
+        let resp = self.client.post(&url).json(&payload).send().await?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(anyhow!(
+                "Failed to clear quiz question {}: HTTP {} - {}",
+                question_hash,
+                status,
+                body
+            ));
+        }
+
+        let result: Value = resp
+            .json()
+            .await
+            .unwrap_or(serde_json::json!({ "status": "cleared" }));
+        Ok(result)
+    }
+
     pub async fn finalize_quiz(
         &self,
         course_hash: &str,

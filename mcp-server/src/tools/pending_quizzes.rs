@@ -8,7 +8,7 @@ use crate::mcp::protocol::{CallToolResult, Tool};
 pub fn tool_definition() -> Tool {
     Tool {
         name: "get_pending_quizzes".to_string(),
-        description: "Retrieves unsubmitted quizzes and assessments across the enrolled courses. Cross-references Supabase for verified answers, calculates deadlines and earnable XP (halved if past deadline), and reports current attempt status ('NOT_STARTED' or 'IN_PROGRESS'). Supports subject filtering.".to_string(),
+        description: "Retrieves unsubmitted quizzes and assessments across the enrolled courses. Cross-references newNewton's solutions for verified answers, calculates deadlines and earnable XP (halved if past deadline), and reports current attempt status ('NOT_STARTED' or 'IN_PROGRESS'). Supports subject filtering.".to_string(),
         input_schema: json!({
             "type": "object",
             "properties": {
@@ -22,7 +22,7 @@ pub fn tool_definition() -> Tool {
                 },
                 "only_solvable": {
                     "type": "boolean",
-                    "description": "If true, only returns quizzes with verified answers available in Supabase.",
+                    "description": "If true, only returns quizzes with verified answers available in newNewton's solutions.",
                     "default": false
                 }
             }
@@ -34,7 +34,8 @@ pub fn tool_definition() -> Tool {
 pub struct PendingQuizzesResult {
     pub course_hash: String,
     pub total_pending_quizzes: usize,
-    pub solvable_by_supabase_count: usize,
+    #[serde(alias = "solvable_by_supabase_count")]
+    pub solvable_by_solutions_count: usize,
     pub unstarted_count: usize,
     pub in_progress_count: usize,
     pub quizzes: Vec<PendingQuizItem>,
@@ -51,7 +52,8 @@ pub struct PendingQuizItem {
     pub deadline: Option<String>,
     pub is_past_deadline: bool,
     pub attempt_status: String,
-    pub has_supabase_solution: bool,
+    #[serde(alias = "has_supabase_solution")]
+    pub has_solution: bool,
     pub topics: Vec<String>,
 }
 
@@ -193,7 +195,7 @@ pub async fn execute(
             deadline: deadline_str,
             is_past_deadline,
             attempt_status,
-            has_supabase_solution: has_supabase,
+            has_solution: has_supabase,
             topics: item.topics,
         });
     }
@@ -201,7 +203,7 @@ pub async fn execute(
     let result = PendingQuizzesResult {
         course_hash: parent_hash,
         total_pending_quizzes: pending_items.len(),
-        solvable_by_supabase_count: solvable_count,
+        solvable_by_solutions_count: solvable_count,
         unstarted_count,
         in_progress_count,
         quizzes: pending_items,

@@ -1,3 +1,4 @@
+pub mod clear_selection;
 pub mod course_scope;
 pub mod decide_language;
 pub mod pending_assignments;
@@ -5,9 +6,11 @@ pub mod pending_quizzes;
 pub mod problem_details;
 pub mod quiz_questions;
 pub mod run_code;
+pub mod save_quiz_answer;
 pub mod submit_quiz;
 pub mod submit_solution;
 pub mod telemetry_control;
+pub mod user_info;
 pub mod user_style;
 
 use serde_json::Value;
@@ -29,7 +32,10 @@ pub fn list_tools() -> Vec<Tool> {
         telemetry_control::configure_tool_definition(),
         pending_quizzes::tool_definition(),
         quiz_questions::tool_definition(),
+        save_quiz_answer::tool_definition(),
+        clear_selection::tool_definition(),
         submit_quiz::tool_definition(),
+        user_info::tool_definition(),
     ]
 }
 
@@ -68,8 +74,17 @@ pub async fn call_tool(
         "get_quiz_questions" | "get_assessment_questions" => {
             quiz_questions::execute(newton_client, supabase_client, args).await
         }
+        "save_quiz_answer" | "save_assessment_answer" => {
+            save_quiz_answer::execute(newton_client, args).await
+        }
+        "clear_selection" | "clear_quiz_selection" | "clear_answer" => {
+            clear_selection::execute(newton_client, args).await
+        }
         "submit_quiz_answers" | "save_quiz_answers" => {
             submit_quiz::execute(newton_client, args).await
+        }
+        "get_user_info" | "get_user_profile" | "user_info" => {
+            user_info::execute(newton_client, args).await
         }
         unknown => CallToolResult::error(format!("Unknown tool: {}", unknown)),
     }

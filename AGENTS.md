@@ -241,6 +241,13 @@ Before concluding any coding turn in this repository, verify:
 
 ## 10. Living Context & Architectural Decision Ledger
 
+- **2026-11-14 — Expanded MCP Server with Individual Quiz Answer Saving, Clear Selection, and User Info**:
+  - Added `save_quiz_answer` (`mcp-server/src/tools/save_quiz_answer.rs`): Dedicated tool to save answers for specific questions in an active quiz attempt without finalizing.
+  - Added `clear_selection` (`mcp-server/src/tools/clear_selection.rs`): Clears/unsets chosen options or text values for a question on Newton LMS.
+  - Added `get_user_info` (`mcp-server/src/tools/user_info.rs`): Retrieves authenticated student profile details (`username`, `uid`, `full_name`, `email`, `phone`, `batch`, `role`) via `/api/v1/user/me/`.
+  - Updated all client/LLM-facing documentation, schemas, and prompts to reference "newNewton's solutions" instead of "Supabase".
+  - Total exposed MCP tools increased to 15. All 29 unit and protocol tests passing.
+
 - **2026-11-08 — Cloudflare Worker Reverse Proxy for Datacenter / Cloud VM Bypass**:
   - Implemented zero-dependency Cloudflare Worker reverse proxy (`mcp-server/proxy/worker.js`) to route LMS and Judge0 API calls through Cloudflare's CDN edge network, bypassing AWS WAF / ALB IP bans on Oracle Cloud Infrastructure (OCI) and other VPS hosts.
   - Automatically discriminates paths: routes `/submissions/*` to `judge0-public.newtonschool.co` and all other API calls to `my.newtonschool.co`.

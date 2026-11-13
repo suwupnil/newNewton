@@ -11,7 +11,7 @@ use crate::models::{
 pub fn tool_definition() -> Tool {
     Tool {
         name: "get_quiz_questions".to_string(),
-        description: "Retrieves all questions for an assessment attempt. Automatically acknowledges honor code if needed, opens or resumes the LMS attempt session, and queries Supabase for verified answers. Pre-fills questions with verified Supabase answers (with option shuffling detection) and clearly marks unsolved questions for the client LLM to reason and answer.".to_string(),
+        description: "Retrieves all questions for an assessment attempt. Automatically acknowledges honor code if needed, opens or resumes the LMS attempt session, and queries newNewton's solutions for verified answers. Pre-fills questions with verified solutions (with option shuffling detection) and clearly marks unsolved questions for the client LLM to reason and answer.".to_string(),
         input_schema: json!({
             "type": "object",
             "properties": {
@@ -34,7 +34,8 @@ pub struct QuizQuestionsDetails {
     pub assessment_hash: String,
     pub course_hash: String,
     pub total_questions: usize,
-    pub supabase_solved_count: usize,
+    #[serde(alias = "supabase_solved_count")]
+    pub solutions_solved_count: usize,
     pub unsolved_count: usize,
     pub resolution_status: String,
     pub questions: Vec<QuizQuestionInfo>,
@@ -48,7 +49,8 @@ pub struct QuizQuestionInfo {
     pub prompt: String,
     pub options: Vec<QuizOptionInfo>,
     pub current_saved_answer: Option<String>,
-    pub supabase_solution: Option<SupabaseSolutionInfo>,
+    #[serde(alias = "supabase_solution")]
+    pub solution: Option<SolutionInfo>,
     pub action_needed: String,
 }
 
@@ -59,7 +61,7 @@ pub struct QuizOptionInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SupabaseSolutionInfo {
+pub struct SolutionInfo {
     pub suggested_answer: String,
     pub explanation: Option<String>,
     pub marks: Option<f64>,
@@ -179,21 +181,21 @@ pub async fn execute(
             .or(active_q.value.as_ref())
             .cloned();
 
-        let (supabase_solution, action_needed) = if let Some(db_q) = matched_db {
+        let (solution, action_needed) = if let Some(db_q) = matched_db {
             solved_count += 1;
             let ans = determine_answer_value(active_q, db_q);
-            let sol = SupabaseSolutionInfo {
+            let sol = SolutionInfo {
                 suggested_answer: ans.clone(),
                 explanation: db_q.correct_explanation.clone(),
                 marks: db_q.marks,
             };
             let action = format!(
-                "USE_SUPABASE_ANSWER: Use suggested answer '{}' directly from verified database",
+                "USE_NEWNEWTON_SOLUTION: Use suggested answer '{}' directly from verified newNewton solutions",
                 ans
             );
             (Some(sol), action)
         } else {
-            let action = "MCP_CLIENT_SOLVE: No Supabase answer found. Think and determine the correct answer.".to_string();
+            let action = "MCP_CLIENT_SOLVE: No verified solution found in newNewton database. Think and determine the correct answer.".to_string();
             (None, action)
         };
 
@@ -204,7 +206,7 @@ pub async fn execute(
             prompt: prompt_clean,
             options,
             current_saved_answer: current_saved,
-            supabase_solution,
+            solution,
             action_needed,
         });
     }
@@ -213,21 +215,21 @@ pub async fn execute(
     let unsolved = total_q.saturating_sub(solved_count);
 
     let resolution_status = if solved_count == total_q && total_q > 0 {
-        "ALL_SOLUTIONS_FOUND_IN_SUPABASE".to_string()
+        "ALL_SOLUTIONS_FOUND".to_string()
     } else if solved_count > 0 {
         format!(
-            "PARTIAL_SOLUTIONS_FOUND ({}/{} from Supabase, {} unsolved)",
+            "PARTIAL_SOLUTIONS_FOUND ({}/{} from newNewton solutions, {} unsolved)",
             solved_count, total_q, unsolved
         )
     } else {
-        "NO_SUPABASE_SOLUTIONS (MCP client must think and solve all questions)".to_string()
+        "NO_SOLUTIONS_FOUND (MCP client must think and solve all questions)".to_string()
     };
 
     let result = QuizQuestionsDetails {
         assessment_hash: clean_assessment_hash,
         course_hash: effective_course_hash,
         total_questions: total_q,
-        supabase_solved_count: solved_count,
+        solutions_solved_count: solved_count,
         unsolved_count: unsolved,
         resolution_status,
         questions: question_infos,
